@@ -13,7 +13,7 @@
             <a-space wrap>
               <a-tag v-for="item in record.fixedItems || []" :key="item.id" 
                 :color="item.type === 'INCOME' ? 'blue' : (item.type === 'EXPENSE' ? 'red' : 'green')">
-                {{ item.name }}: ¥{{ item.amount }}
+                {{ item.name }}{{ item.categoryName ? ' · ' + item.categoryName : '' }}: ¥{{ item.amount }}
               </a-tag>
             </a-space>
           </template>
@@ -44,14 +44,26 @@
           <a-input-number v-model:value="formState.startDay" :min="1" :max="31" style="width: 100%" />
         </a-form-item>
         <a-form-item label="固定项目标签" help="设置该周期下每月固定的收支和存款计划">
-          <div v-for="(item, index) in formState.fixedItems" :key="index" style="display: flex; gap: 8px; margin-bottom: 8px;">
-            <a-select v-model:value="item.type" style="width: 120px">
+          <div v-for="(item, index) in formState.fixedItems" :key="index" style="display: flex; gap: 8px; margin-bottom: 8px; align-items: center;">
+            <a-select v-model:value="item.type" style="width: 100px" @change="() => { item.categoryId = null; item.categoryName = ''; }">
               <a-select-option value="INCOME">固收</a-select-option>
               <a-select-option value="EXPENSE">固支</a-select-option>
               <a-select-option value="DEPOSIT">固存</a-select-option>
             </a-select>
+            <a-select
+              v-if="item.type !== 'DEPOSIT'"
+              v-model:value="item.categoryId"
+              placeholder="所属分类"
+              style="width: 130px"
+              allowClear
+              @change="(val: any) => onCategoryChange(item, val)">
+              <a-select-option v-for="c in getFilteredCategories(item.type)" :key="c.id" :value="c.id">
+                {{ c.name }}
+              </a-select-option>
+            </a-select>
+            <div v-else style="width: 130px; text-align: center; color: #999; font-size: 12px;">(必攒无需分类)</div>
             <a-input v-model:value="item.name" placeholder="项目名称 (如房租)" style="flex: 1" />
-            <a-input-number v-model:value="item.amount" :min="0" :precision="2" placeholder="金额" style="width: 150px" />
+            <a-input-number v-model:value="item.amount" :min="0" :precision="2" placeholder="金额" style="width: 130px" />
             <a-button type="text" danger @click="removeFixedItem(index)">删除</a-button>
           </div>
           <a-button type="dashed" block @click="addFixedItem">
@@ -72,6 +84,7 @@ import { message } from 'ant-design-vue';
 import request from '../utils/request';
 
 const templates = ref([]);
+const categories = ref<any[]>([]);
 const visible = ref(false);
 const editingId = ref<number | null>(null);
 
@@ -94,6 +107,29 @@ const fetchTemplates = async () => {
   templates.value = await request.get('/cycle-templates');
 };
 
+const fetchCategories = async () => {
+  categories.value = await request.get('/categories');
+};
+
+const getFilteredCategories = (itemType: string) => {
+  if (itemType === 'INCOME') {
+    return categories.value.filter(c => c.type === 1);
+  } else if (itemType === 'EXPENSE') {
+    return categories.value.filter(c => c.type === 2);
+  }
+  return [];
+};
+
+const onCategoryChange = (item: any, categoryId: any) => {
+  if (!categoryId) {
+    item.categoryId = null;
+    item.categoryName = '';
+    return;
+  }
+  const found = categories.value.find(c => c.id === categoryId);
+  item.categoryName = found ? found.name : '';
+};
+
 const showModal = () => {
   editingId.value = null;
   formState.value = { name: '', startDay: 1, fixedItems: [], isDefault: 0 };
@@ -107,7 +143,7 @@ const editTemplate = (record: any) => {
 };
 
 const addFixedItem = () => {
-  formState.value.fixedItems.push({ name: '', type: 'EXPENSE', amount: 0 });
+  formState.value.fixedItems.push({ name: '', type: 'EXPENSE', amount: 0, categoryId: null, categoryName: '' });
 };
 
 const removeFixedItem = (index: number) => {
@@ -146,5 +182,6 @@ const deleteTemplate = async (id: number) => {
 
 onMounted(() => {
   fetchTemplates();
+  fetchCategories();
 });
 </script>

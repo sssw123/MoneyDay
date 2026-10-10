@@ -16,7 +16,7 @@
                   <a-tag v-else :color="item.isBooked ? 'default' : (item.type === 'INCOME' ? 'blue' : 'red')"
                          :style="{ cursor: 'pointer' }"
                          @click="handleTagClick(record, item)">
-                    {{ item.name }}: ¥{{ item.amount }}
+                    {{ item.name }}{{ item.categoryName ? ' · ' + item.categoryName : '' }}: ¥{{ item.amount }}
                     <span v-if="!item.isBooked"> (点此{{ item.type === 'INCOME' ? '到账' : '支付' }})</span>
                     <span v-else style="color: #999;"> (已完成 - 点击撤销)</span>
                   </a-tag>
@@ -36,13 +36,22 @@
       </a-tab-pane>
 
       <a-tab-pane key="target" tab="攒钱目标">
-        <div style="margin-bottom: 16px;">
-          <a-button type="primary" @click="showTargetModal">新增目标</a-button>
+        <div style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
+          <a-space>
+            <a-button type="primary" @click="showTargetModal">新增目标</a-button>
+            <span style="font-size: 14px; color: #666; margin-left: 12px;">
+              当前全局累计结余池:
+              <b :style="{ color: cumulativeBalance >= 0 ? '#52c41a' : '#ff4d4f', fontSize: '16px' }">
+                ¥{{ cumulativeBalance }}
+              </b>
+            </span>
+          </a-space>
         </div>
         <a-table :dataSource="targets" :columns="targetColumns" rowKey="id">
           <template #bodyCell="{ column, record }">
             <template v-if="column.key === 'progress'">
-              <a-progress :percent="Math.round((record.allocatedAmount / record.targetAmount) * 100)" />
+              <a-progress :percent="getProgress(record)"
+                          :status="getProgress(record) >= 100 ? 'success' : 'active'" />
             </template>
             <template v-else-if="column.key === 'isRealized'">
               <a-tag :color="record.isRealized === 1 ? 'green' : 'blue'">
@@ -51,7 +60,16 @@
             </template>
             <template v-else-if="column.key === 'action'">
               <a-space>
-                <a-button type="primary" size="small" v-if="record.isRealized === 0" @click="showRealizeModal(record)">实现目标</a-button>
+                <a-tooltip :title="cumulativeBalance < record.targetAmount ? '当前累计结余不足以实现此目标' : ''">
+                  <a-button
+                    type="primary"
+                    size="small"
+                    v-if="record.isRealized === 0"
+                    :disabled="cumulativeBalance < record.targetAmount"
+                    @click="showRealizeModal(record)">
+                    实现目标
+                  </a-button>
+                </a-tooltip>
                 <a @click="editTarget(record)">编辑</a>
                 <a-popconfirm title="确定删除吗？" @confirm="deleteTarget(record.id)">
                   <a style="color: red">删除</a>
@@ -89,8 +107,8 @@
         <a-form-item label="目标金额" required>
           <a-input-number v-model:value="targetForm.targetAmount" :min="0.01" :precision="2" style="width: 100%" />
         </a-form-item>
-        <a-form-item label="已存金额">
-          <a-input-number v-model:value="targetForm.allocatedAmount" :min="0" :precision="2" style="width: 100%" />
+        <a-form-item label="开始时间" required help="目标立项时间，默认为当前日期">
+          <a-date-picker v-model:value="targetForm.startDate" valueFormat="YYYY-MM-DD" style="width: 100%" />
         </a-form-item>
         <a-form-item label="截止日期">
           <a-date-picker v-model:value="targetForm.deadline" valueFormat="YYYY-MM-DD" style="width: 100%" />
@@ -135,11 +153,21 @@ const targetColumns = [
   { title: '状态', key: 'isRealized' },
   { title: '目标名称', dataIndex: 'name', key: 'name' },
   { title: '目标金额', dataIndex: 'targetAmount', key: 'targetAmount' },
-  { title: '已存金额', dataIndex: 'allocatedAmount', key: 'allocatedAmount' },
+  { title: '开始时间', dataIndex: 'startDate', key: 'startDate' },
   { title: '进度', key: 'progress' },
   { title: '截止日期', dataIndex: 'deadline', key: 'deadline' },
   { title: '操作', key: 'action' }
 ];
+
+// 累计结余池
+const cumulativeBalance = ref(0);
+
+const getProgress = (record: any) => {
+  if (record.isRealized === 1) return 100;
+  if (!cumulativeBalance.value || cumulativeBalance.value <= 0) return 0;
+  if (cumulativeBalance.value >= record.targetAmount) return 100;
+  return Math.round((cumulativeBalance.value / record.targetAmount) * 100);
+};
 
 // 项目记账相关
 const itemVisible = ref(false);
@@ -157,7 +185,12 @@ const itemDate = ref<string>('');
 // 目标相关
 const targetVisible = ref(false);
 const targetEditingId = ref<number | null>(null);
-const targetForm = ref({ name: '', targetAmount: 0, allocatedAmount: 0, deadline: '' });
+const targetForm = ref({
+  name: '',
+  targetAmount: 0,
+  startDate: new Date().toISOString().split('T')[0],
+  deadline: ''
+});
 
 // 目标实现相关
 const realizeVisible = ref(false);
@@ -168,6 +201,7 @@ const fetchData = async () => {
   cycles.value = await request.get('/cycles');
   targets.value = await request.get('/targets');
   accounts.value = await request.get('/accounts');
+  cumulativeBalance.value = await request.get('/targets/cumulative-balance');
 };
 
 const handleTagClick = (record: any, item: any) => {
@@ -236,7 +270,12 @@ const handleItemOk = async () => {
 
 const showTargetModal = () => {
   targetEditingId.value = null;
-  targetForm.value = { name: '', targetAmount: 0, allocatedAmount: 0, deadline: '' };
+  targetForm.value = {
+    name: '',
+    targetAmount: 0,
+    startDate: new Date().toISOString().split('T')[0],
+    deadline: ''
+  };
   targetVisible.value = true;
 };
 

@@ -14,7 +14,7 @@ public class Target {
     private Long id;
     private String name;
     private BigDecimal targetAmount;
-    private BigDecimal allocatedAmount;
+    private LocalDate startDate;
     private LocalDate deadline;
     private Integer isRealized;
     private LocalDateTime createdAt;
@@ -26,8 +26,8 @@ public class Target {
     public void setName(String name) { this.name = name; }
     public BigDecimal getTargetAmount() { return targetAmount; }
     public void setTargetAmount(BigDecimal targetAmount) { this.targetAmount = targetAmount; }
-    public BigDecimal getAllocatedAmount() { return allocatedAmount; }
-    public void setAllocatedAmount(BigDecimal allocatedAmount) { this.allocatedAmount = allocatedAmount; }
+    public LocalDate getStartDate() { return startDate; }
+    public void setStartDate(LocalDate startDate) { this.startDate = startDate; }
     public LocalDate getDeadline() { return deadline; }
     public void setDeadline(LocalDate deadline) { this.deadline = deadline; }
     public Integer getIsRealized() { return isRealized; }

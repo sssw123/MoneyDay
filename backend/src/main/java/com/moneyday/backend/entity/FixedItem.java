@@ -9,6 +9,8 @@ public class FixedItem {
     private BigDecimal amount;
     private Boolean isBooked;
     private Long transactionId;
+    private Long categoryId;
+    private String categoryName;
 
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
@@ -22,4 +24,8 @@ public class FixedItem {
     public void setIsBooked(Boolean isBooked) { this.isBooked = isBooked; }
     public Long getTransactionId() { return transactionId; }
     public void setTransactionId(Long transactionId) { this.transactionId = transactionId; }
+    public Long getCategoryId() { return categoryId; }
+    public void setCategoryId(Long categoryId) { this.categoryId = categoryId; }
+    public String getCategoryName() { return categoryName; }
+    public void setCategoryName(String categoryName) { this.categoryName = categoryName; }
 }

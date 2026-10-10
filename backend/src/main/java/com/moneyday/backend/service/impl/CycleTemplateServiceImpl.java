@@ -71,6 +71,8 @@ public class CycleTemplateServiceImpl implements CycleTemplateService {
                 newItem.setName(tplItem.getName());
                 newItem.setType(tplItem.getType());
                 newItem.setAmount(tplItem.getAmount());
+                newItem.setCategoryId(tplItem.getCategoryId());
+                newItem.setCategoryName(tplItem.getCategoryName());
                 
                 // 寻找旧状态
                 boolean foundBooked = false;

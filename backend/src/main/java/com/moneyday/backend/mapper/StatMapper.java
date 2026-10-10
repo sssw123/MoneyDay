@@ -16,7 +16,7 @@ public interface StatMapper {
     @Select("SELECT IFNULL(SUM(target_amount), 0) FROM target WHERE is_realized = 0")
     BigDecimal getTotalTargets();
 
-    @Select("SELECT IFNULL(SUM(allocated_amount), 0) FROM target WHERE is_realized = 0")
+    @Select("SELECT IFNULL(SUM(target_amount), 0) FROM target WHERE is_realized = 1")
     BigDecimal getTargetAllocated();
 
     @Select("SELECT IFNULL(SUM(amount), 0) FROM transaction WHERE type = 1 AND transaction_date >= #{startDate} AND transaction_date <= #{endDate}")

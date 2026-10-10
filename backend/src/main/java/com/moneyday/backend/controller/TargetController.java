@@ -15,9 +15,17 @@ public class TargetController {
     @Autowired
     private TargetService targetService;
 
+    @Autowired
+    private com.moneyday.backend.service.CycleRecordService cycleRecordService;
+
     @GetMapping
     public Result<List<Target>> getAll() {
         return Result.success(targetService.getAllTargets());
+    }
+
+    @GetMapping("/cumulative-balance")
+    public Result<java.math.BigDecimal> getCumulativeBalance() {
+        return Result.success(cycleRecordService.getTotalCumulativeBalance());
     }
 
     @PostMapping

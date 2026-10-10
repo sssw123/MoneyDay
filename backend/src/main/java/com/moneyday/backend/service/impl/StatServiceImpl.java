@@ -71,7 +71,12 @@ public class StatServiceImpl implements StatService {
             }
         }
         
-        dto.setCurrentBalance(dto.getCurrentIncome().subtract(fixedDeposit).subtract(dto.getCurrentExpense()));
+        dto.setCurrentFixedDeposit(fixedDeposit);
+        BigDecimal balance = dto.getCurrentIncome().subtract(fixedDeposit).subtract(dto.getCurrentExpense());
+        dto.setCurrentBalance(balance);
+        dto.setCurrentFinalBalance(fixedDeposit.add(balance));
+        dto.setAvailableAssets(dto.getTotalAssets().subtract(dto.getTotalTargets()));
+        dto.setCumulativeBalance(cycleRecordService.getTotalCumulativeBalance());
         dto.setCategoryExpenses(statMapper.getCategoryExpensesByDate(sDate, eDate));
 
         return dto;

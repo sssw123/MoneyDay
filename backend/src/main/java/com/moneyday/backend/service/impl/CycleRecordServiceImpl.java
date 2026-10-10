@@ -50,6 +50,8 @@ public class CycleRecordServiceImpl implements CycleRecordService {
                 newItem.setName(tplItem.getName());
                 newItem.setType(tplItem.getType());
                 newItem.setAmount(tplItem.getAmount());
+                newItem.setCategoryId(tplItem.getCategoryId());
+                newItem.setCategoryName(tplItem.getCategoryName());
                 newItem.setIsBooked(false);
                 items.add(newItem);
             }
@@ -101,6 +103,7 @@ public class CycleRecordServiceImpl implements CycleRecordService {
         tx.setType("INCOME".equals(targetItem.getType()) ? 1 : 2);
         tx.setAmount(amount);
         tx.setAccountId(accountId);
+        tx.setCategoryId(targetItem.getCategoryId());
         tx.setTransactionDate(LocalDate.parse(date));
         tx.setRemark("周期项目确认：" + targetItem.getName());
         transactionMapper.insert(tx);
@@ -256,5 +259,22 @@ public class CycleRecordServiceImpl implements CycleRecordService {
             list.add(map);
         }
         return list;
+    }
+
+    @Override
+    public BigDecimal getTotalCumulativeBalance() {
+        List<Map<String, Object>> cycles = getRecentCycles(12);
+        BigDecimal total = BigDecimal.ZERO;
+        if (cycles != null) {
+            for (Map<String, Object> c : cycles) {
+                Object b = c.get("balance");
+                if (b instanceof BigDecimal) {
+                    total = total.add((BigDecimal) b);
+                } else if (b != null) {
+                    total = total.add(new BigDecimal(b.toString()));
+                }
+            }
+        }
+        return total;
     }
 }
