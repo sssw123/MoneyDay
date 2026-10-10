@@ -1,0 +1,40 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "py -3 .gemini/hooks/session-start.py",
+            "timeout": 30000
+          }
+        ]
+      }
+    ],
+    "BeforeAgent": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "py -3 .gemini/hooks/inject-workflow-state.py",
+            "timeout": 15000
+          }
+        ]
+      }
+    ],
+    "BeforeTool": [
+      {
+        "matcher": "run_shell_command|ShellTool",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "py -3 .gemini/hooks/inject-shell-session-context.py",
+            "timeout": 5000
+          }
+        ]
+      }
+    ]
+  }
+}
