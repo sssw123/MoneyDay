@@ -54,12 +54,33 @@ public class TransactionServiceImpl implements TransactionService {
         return tx;
     }
 
+    @Autowired
+    private com.moneyday.backend.mapper.CycleRecordMapper cycleRecordMapper;
+
     @Transactional
     public void deleteTransaction(Long id) {
         Transaction oldTx = transactionMapper.selectById(id);
         if (oldTx != null) {
             applyTransactionToAccount(oldTx, true);
             transactionMapper.deleteById(id);
+
+            // 联动重置关联的周期固定项目状态
+            List<com.moneyday.backend.entity.CycleRecord> records = cycleRecordMapper.selectList(null);
+            for (com.moneyday.backend.entity.CycleRecord record : records) {
+                if (record.getFixedItems() != null) {
+                    boolean modified = false;
+                    for (com.moneyday.backend.entity.FixedItem item : record.getFixedItems()) {
+                        if (id.equals(item.getTransactionId())) {
+                            item.setIsBooked(false);
+                            item.setTransactionId(null);
+                            modified = true;
+                        }
+                    }
+                    if (modified) {
+                        cycleRecordMapper.updateById(record);
+                    }
+                }
+            }
         }
     }
 

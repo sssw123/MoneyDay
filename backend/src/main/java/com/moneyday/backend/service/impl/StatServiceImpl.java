@@ -62,7 +62,14 @@ public class StatServiceImpl implements StatService {
         // Get fixed deposit for current cycle
         com.moneyday.backend.entity.CycleRecord record = cycleRecordService.getOrCreateSnapshot(startDate, endDate);
 
-        BigDecimal fixedDeposit = record.getFixedDeposit() != null ? record.getFixedDeposit() : BigDecimal.ZERO;
+        BigDecimal fixedDeposit = BigDecimal.ZERO;
+        if (record.getFixedItems() != null) {
+            for (com.moneyday.backend.entity.FixedItem item : record.getFixedItems()) {
+                if ("DEPOSIT".equals(item.getType()) && item.getAmount() != null) {
+                    fixedDeposit = fixedDeposit.add(item.getAmount());
+                }
+            }
+        }
         
         dto.setCurrentBalance(dto.getCurrentIncome().subtract(fixedDeposit).subtract(dto.getCurrentExpense()));
         dto.setCategoryExpenses(statMapper.getCategoryExpensesByDate(sDate, eDate));

@@ -74,6 +74,7 @@ public class CycleTemplateServiceImpl implements CycleTemplateService {
                 
                 // 寻找旧状态
                 boolean foundBooked = false;
+                Long txId = null;
                 for (FixedItem oldItem : currentItems) {
                     boolean matchById = oldItem.getId() != null && oldItem.getId().equals(tplItem.getId());
                     boolean matchByName = oldItem.getName() != null && oldItem.getName().equals(tplItem.getName()) && 
@@ -82,6 +83,7 @@ public class CycleTemplateServiceImpl implements CycleTemplateService {
                     if (matchById || matchByName) {
                         if (Boolean.TRUE.equals(oldItem.getIsBooked())) {
                             foundBooked = true;
+                            txId = oldItem.getTransactionId();
                             // 如果已经入账了，保留老金额
                             newItem.setAmount(oldItem.getAmount());
                         }
@@ -89,6 +91,7 @@ public class CycleTemplateServiceImpl implements CycleTemplateService {
                     }
                 }
                 newItem.setIsBooked(foundBooked);
+                newItem.setTransactionId(txId);
                 mergedItems.add(newItem);
             }
             

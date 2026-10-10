@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.moneyday.backend.entity.Account;
 import com.moneyday.backend.entity.CycleRecord;
 import com.moneyday.backend.entity.CycleTemplate;
+import com.moneyday.backend.entity.FixedItem;
 import com.moneyday.backend.entity.Transaction;
 import com.moneyday.backend.mapper.AccountMapper;
 import com.moneyday.backend.mapper.CycleRecordMapper;
@@ -22,6 +23,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @Service
 public class CycleRecordServiceImpl implements CycleRecordService {
@@ -40,65 +42,125 @@ public class CycleRecordServiceImpl implements CycleRecordService {
         if (record != null) return record;
 
         CycleTemplate template = cycleTemplateMapper.findDefault();
-        BigDecimal defaultDeposit = (template != null && template.getDefaultFixedDeposit() != null)
-                ? template.getDefaultFixedDeposit() : BigDecimal.ZERO;
-        BigDecimal defaultIncome = (template != null && template.getDefaultFixedIncome() != null)
-                ? template.getDefaultFixedIncome() : BigDecimal.ZERO;
+        List<FixedItem> items = new ArrayList<>();
+        if (template != null && template.getFixedItems() != null) {
+            for (FixedItem tplItem : template.getFixedItems()) {
+                FixedItem newItem = new FixedItem();
+                newItem.setId(tplItem.getId() != null ? tplItem.getId() : UUID.randomUUID().toString());
+                newItem.setName(tplItem.getName());
+                newItem.setType(tplItem.getType());
+                newItem.setAmount(tplItem.getAmount());
+                newItem.setIsBooked(false);
+                items.add(newItem);
+            }
+        }
 
         record = new CycleRecord();
         record.setCycleStartDate(cycleStartDate);
         record.setCycleEndDate(cycleEndDate);
-        record.setFixedDeposit(defaultDeposit);
-        record.setFixedIncome(defaultIncome);
-        record.setIsFixedIncomeBooked(0);
+        record.setFixedItems(items);
         cycleRecordMapper.insert(record);
         return record;
     }
 
     @Override
     public CycleRecord updateFixedDeposit(Long id, BigDecimal newAmount) {
-        CycleRecord record = cycleRecordMapper.selectById(id);
-        if (record != null) {
-            record.setFixedDeposit(newAmount);
-            cycleRecordMapper.updateById(record);
-        }
-        return record;
+        // Obsolete, left empty or throw
+        throw new UnsupportedOperationException("Obsolete method");
     }
 
     @Override
     @Transactional
     public Map<String, Object> bookIncome(Long id, Long accountId, BigDecimal amount, String date) {
-        CycleRecord record = cycleRecordMapper.selectById(id);
-        if (record == null) throw new IllegalArgumentException("周期记录不存在");
-        if (record.getIsFixedIncomeBooked() != null && record.getIsFixedIncomeBooked() == 1) {
-            throw new IllegalArgumentException("该周期固收已到账，不可重复操作");
+        // Obsolete, replaced by bookItem
+        throw new UnsupportedOperationException("Obsolete method");
+    }
+
+    @Transactional
+    public Map<String, Object> bookItem(Long recordId, String itemId, Long accountId, BigDecimal amount, String date) {
+        CycleRecord record = cycleRecordMapper.selectById(recordId);
+        if (record == null || record.getFixedItems() == null) throw new IllegalArgumentException("周期记录不存在");
+
+        FixedItem targetItem = null;
+        for (FixedItem item : record.getFixedItems()) {
+            if (itemId.equals(item.getId())) {
+                targetItem = item;
+                break;
+            }
+        }
+        if (targetItem == null) throw new IllegalArgumentException("明细项不存在");
+        if (Boolean.TRUE.equals(targetItem.getIsBooked())) {
+            throw new IllegalArgumentException("该项目已操作，不可重复记账");
+        }
+        if ("DEPOSIT".equals(targetItem.getType())) {
+            throw new IllegalArgumentException("固存不需要记账操作");
         }
 
-        // 生成真实收入交易
+        // 生成真实交易
         Transaction tx = new Transaction();
-        tx.setType(1);
+        tx.setType("INCOME".equals(targetItem.getType()) ? 1 : 2);
         tx.setAmount(amount);
         tx.setAccountId(accountId);
         tx.setTransactionDate(LocalDate.parse(date));
-        tx.setRemark("周期固收到账");
+        tx.setRemark("周期项目确认：" + targetItem.getName());
         transactionMapper.insert(tx);
 
         // 更新账户余额
         Account account = accountMapper.selectById(accountId);
         if (account != null) {
-            account.setCurrentBalance(account.getCurrentBalance().add(amount));
+            BigDecimal diff = "INCOME".equals(targetItem.getType()) ? amount : amount.negate();
+            account.setCurrentBalance(account.getCurrentBalance().add(diff));
             accountMapper.updateById(account);
         }
 
         // 更新快照
-        record.setFixedIncome(amount);
-        record.setIsFixedIncomeBooked(1);
+        targetItem.setAmount(amount); // update to actual amount
+        targetItem.setIsBooked(true);
+        targetItem.setTransactionId(tx.getId());
         cycleRecordMapper.updateById(record);
 
         Map<String, Object> result = new HashMap<>();
         result.put("id", record.getId());
-        result.put("fixedIncome", amount);
-        result.put("isFixedIncomeBooked", 1);
+        result.put("fixedItems", record.getFixedItems());
+        return result;
+    }
+
+    @Override
+    @Transactional
+    public Map<String, Object> unbookItem(Long recordId, String itemId) {
+        CycleRecord record = cycleRecordMapper.selectById(recordId);
+        if (record == null || record.getFixedItems() == null) throw new IllegalArgumentException("周期记录不存在");
+
+        FixedItem targetItem = null;
+        for (FixedItem item : record.getFixedItems()) {
+            if (itemId.equals(item.getId())) {
+                targetItem = item;
+                break;
+            }
+        }
+        if (targetItem == null) throw new IllegalArgumentException("明细项不存在");
+
+        if (targetItem.getTransactionId() != null) {
+            Transaction tx = transactionMapper.selectById(targetItem.getTransactionId());
+            if (tx != null) {
+                // 回滚账户余额
+                Account account = accountMapper.selectById(tx.getAccountId());
+                if (account != null) {
+                    BigDecimal revertDiff = tx.getType() == 1 ? tx.getAmount().negate() : tx.getAmount();
+                    account.setCurrentBalance(account.getCurrentBalance().add(revertDiff));
+                    accountMapper.updateById(account);
+                }
+                transactionMapper.deleteById(tx.getId());
+            }
+        }
+
+        targetItem.setIsBooked(false);
+        targetItem.setTransactionId(null);
+        cycleRecordMapper.updateById(record);
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("id", record.getId());
+        result.put("fixedItems", record.getFixedItems());
         return result;
     }
 
@@ -131,14 +193,57 @@ public class CycleRecordServiceImpl implements CycleRecordService {
             String sDateStr = sDate.format(DateTimeFormatter.ISO_LOCAL_DATE);
             String eDateStr = eDate.format(DateTimeFormatter.ISO_LOCAL_DATE);
 
+            // 动态联动验证：如果标记为已完成，但对应流水不存在或已被删除，自动恢复未完成！
+            boolean needUpdateRecord = false;
+            if (record.getFixedItems() != null) {
+                for (FixedItem item : record.getFixedItems()) {
+                    if (Boolean.TRUE.equals(item.getIsBooked())) {
+                        if (item.getTransactionId() != null) {
+                            Transaction tx = transactionMapper.selectById(item.getTransactionId());
+                            if (tx == null) {
+                                item.setIsBooked(false);
+                                item.setTransactionId(null);
+                                needUpdateRecord = true;
+                            }
+                        } else {
+                            // 兼容旧数据：检查周期内是否存在该流水的备注
+                            QueryWrapper<Transaction> txQuery = new QueryWrapper<>();
+                            txQuery.eq("remark", "周期项目确认：" + item.getName())
+                                   .ge("transaction_date", sDate)
+                                   .le("transaction_date", eDate)
+                                   .last("LIMIT 1");
+                            Transaction tx = transactionMapper.selectOne(txQuery);
+                            if (tx != null) {
+                                item.setTransactionId(tx.getId());
+                                needUpdateRecord = true;
+                            } else {
+                                // 流水表中不存在任何对应记录，自动重置为未完成
+                                item.setIsBooked(false);
+                                needUpdateRecord = true;
+                            }
+                        }
+                    }
+                }
+            }
+            if (needUpdateRecord) {
+                cycleRecordMapper.updateById(record);
+            }
+
             BigDecimal income = statMapper.getIncomeByDate(sDateStr, eDateStr);
             if (income == null) income = BigDecimal.ZERO;
             BigDecimal expense = statMapper.getExpenseByDate(sDateStr, eDateStr);
             if (expense == null) expense = BigDecimal.ZERO;
 
-            BigDecimal fixedDeposit = record.getFixedDeposit() != null ? record.getFixedDeposit() : BigDecimal.ZERO;
-            BigDecimal fixedIncome = record.getFixedIncome() != null ? record.getFixedIncome() : BigDecimal.ZERO;
-            BigDecimal balance = income.subtract(fixedDeposit).subtract(expense);
+            BigDecimal depositSum = BigDecimal.ZERO;
+            if (record.getFixedItems() != null) {
+                for (FixedItem item : record.getFixedItems()) {
+                    if ("DEPOSIT".equals(item.getType()) && item.getAmount() != null) {
+                        depositSum = depositSum.add(item.getAmount());
+                    }
+                }
+            }
+            
+            BigDecimal balance = income.subtract(expense).subtract(depositSum);
 
             Map<String, Object> map = new HashMap<>();
             map.put("id", record.getId());
@@ -146,13 +251,10 @@ public class CycleRecordServiceImpl implements CycleRecordService {
             map.put("cycleEndDate", eDateStr);
             map.put("income", income);
             map.put("expense", expense);
-            map.put("fixedDeposit", fixedDeposit);
-            map.put("fixedIncome", fixedIncome);
-            map.put("isFixedIncomeBooked", record.getIsFixedIncomeBooked() != null ? record.getIsFixedIncomeBooked() : 0);
+            map.put("fixedItems", record.getFixedItems());
             map.put("balance", balance);
             list.add(map);
         }
         return list;
     }
 }
-

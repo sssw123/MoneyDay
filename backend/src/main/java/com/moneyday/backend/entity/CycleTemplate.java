@@ -3,16 +3,21 @@ import java.math.BigDecimal;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
 
-@TableName("cycle_template")
+import java.util.List;
+
+@TableName(value = "cycle_template", autoResultMap = true)
 public class CycleTemplate {
     @TableId(type = IdType.AUTO)
     private Long id;
     private String name;
     private Integer startDay;
     private Integer isDefault;
-    private BigDecimal defaultFixedDeposit;
-    private BigDecimal defaultFixedIncome;
+    
+    @TableField(typeHandler = JacksonTypeHandler.class)
+    private List<FixedItem> fixedItems;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -22,8 +27,6 @@ public class CycleTemplate {
     public void setStartDay(Integer startDay) { this.startDay = startDay; }
     public Integer getIsDefault() { return isDefault; }
     public void setIsDefault(Integer isDefault) { this.isDefault = isDefault; }
-    public BigDecimal getDefaultFixedDeposit() { return defaultFixedDeposit; }
-    public void setDefaultFixedDeposit(BigDecimal defaultFixedDeposit) { this.defaultFixedDeposit = defaultFixedDeposit; }
-    public BigDecimal getDefaultFixedIncome() { return defaultFixedIncome; }
-    public void setDefaultFixedIncome(BigDecimal defaultFixedIncome) { this.defaultFixedIncome = defaultFixedIncome; }
+    public List<FixedItem> getFixedItems() { return fixedItems; }
+    public void setFixedItems(List<FixedItem> fixedItems) { this.fixedItems = fixedItems; }
 }

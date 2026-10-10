@@ -9,6 +9,14 @@
           <template v-if="column.key === 'startDay'">
             {{ record.startDay === 31 ? '月末' : record.startDay + '号' }}
           </template>
+          <template v-else-if="column.key === 'fixedItems'">
+            <a-space wrap>
+              <a-tag v-for="item in record.fixedItems || []" :key="item.id" 
+                :color="item.type === 'INCOME' ? 'blue' : (item.type === 'EXPENSE' ? 'red' : 'green')">
+                {{ item.name }}: ¥{{ item.amount }}
+              </a-tag>
+            </a-space>
+          </template>
           <template v-else-if="column.key === 'isDefault'">
             <a-tag :color="record.isDefault === 1 ? 'green' : 'default'">
               {{ record.isDefault === 1 ? '当前默认' : '否' }}
@@ -27,19 +35,28 @@
       </a-table>
     </a-card>
 
-    <a-modal v-model:open="visible" :title="editingId ? '编辑模板' : '新增模板'" @ok="handleOk">
-      <a-form :model="formState" :label-col="{ span: 6 }" :wrapper-col="{ span: 16 }">
+    <a-modal v-model:open="visible" :title="editingId ? '编辑模板' : '新增模板'" @ok="handleOk" width="800px">
+      <a-form :model="formState" :label-col="{ span: 4 }" :wrapper-col="{ span: 18 }">
         <a-form-item label="模板名称" required>
           <a-input v-model:value="formState.name" placeholder="例如：发薪日周期" />
         </a-form-item>
         <a-form-item label="起算日" required help="每月从几号开始算作新的一月（输入 31 代表每月末）">
           <a-input-number v-model:value="formState.startDay" :min="1" :max="31" style="width: 100%" />
         </a-form-item>
-        <a-form-item label="全局默认固存" help="所有新周期默认的必攒金额">
-          <a-input-number v-model:value="formState.defaultFixedDeposit" :min="0" style="width: 100%" />
-        </a-form-item>
-        <a-form-item label="全局默认固收" help="所有新周期默认的固定收入（薪水）">
-          <a-input-number v-model:value="formState.defaultFixedIncome" :min="0" style="width: 100%" />
+        <a-form-item label="固定项目标签" help="设置该周期下每月固定的收支和存款计划">
+          <div v-for="(item, index) in formState.fixedItems" :key="index" style="display: flex; gap: 8px; margin-bottom: 8px;">
+            <a-select v-model:value="item.type" style="width: 120px">
+              <a-select-option value="INCOME">固收</a-select-option>
+              <a-select-option value="EXPENSE">固支</a-select-option>
+              <a-select-option value="DEPOSIT">固存</a-select-option>
+            </a-select>
+            <a-input v-model:value="item.name" placeholder="项目名称 (如房租)" style="flex: 1" />
+            <a-input-number v-model:value="item.amount" :min="0" :precision="2" placeholder="金额" style="width: 150px" />
+            <a-button type="text" danger @click="removeFixedItem(index)">删除</a-button>
+          </div>
+          <a-button type="dashed" block @click="addFixedItem">
+            + 添加项目
+          </a-button>
         </a-form-item>
         <a-form-item label="设为默认">
           <a-switch :checked="formState.isDefault === 1" @change="(val: boolean | string | number) => formState.isDefault = val ? 1 : 0" />
@@ -61,16 +78,14 @@ const editingId = ref<number | null>(null);
 const formState = ref({
   name: '',
   startDay: 1,
-  defaultFixedDeposit: 0,
-  defaultFixedIncome: 0,
+  fixedItems: [] as any[],
   isDefault: 0
 });
 
 const columns = [
   { title: '模板名称', dataIndex: 'name', key: 'name' },
   { title: '起算日', key: 'startDay' },
-  { title: '全局默认固存', dataIndex: 'defaultFixedDeposit', key: 'defaultFixedDeposit' },
-  { title: '全局默认固收', dataIndex: 'defaultFixedIncome', key: 'defaultFixedIncome' },
+  { title: '固定项目', key: 'fixedItems' },
   { title: '是否默认', key: 'isDefault' },
   { title: '操作', key: 'action' }
 ];
@@ -81,14 +96,22 @@ const fetchTemplates = async () => {
 
 const showModal = () => {
   editingId.value = null;
-  formState.value = { name: '', startDay: 1, defaultFixedDeposit: 0, defaultFixedIncome: 0, isDefault: 0 };
+  formState.value = { name: '', startDay: 1, fixedItems: [], isDefault: 0 };
   visible.value = true;
 };
 
 const editTemplate = (record: any) => {
   editingId.value = record.id;
-  formState.value = { ...record };
+  formState.value = { ...record, fixedItems: record.fixedItems ? [...record.fixedItems] : [] };
   visible.value = true;
+};
+
+const addFixedItem = () => {
+  formState.value.fixedItems.push({ name: '', type: 'EXPENSE', amount: 0 });
+};
+
+const removeFixedItem = (index: number) => {
+  formState.value.fixedItems.splice(index, 1);
 };
 
 const setDefault = async (id: number) => {

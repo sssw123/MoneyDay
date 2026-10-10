@@ -28,11 +28,16 @@ public class CycleRecordController {
         return Result.success(cycleRecordService.updateFixedDeposit(id, newAmount));
     }
 
-    @PostMapping("/{id}/book-income")
-    public Result<Map<String, Object>> bookIncome(@PathVariable Long id, @RequestBody Map<String, Object> payload) {
+    @PostMapping("/{id}/book-item/{itemId}")
+    public Result<Map<String, Object>> bookItem(@PathVariable Long id, @PathVariable String itemId, @RequestBody Map<String, Object> payload) {
         Long accountId = Long.valueOf(payload.get("accountId").toString());
         BigDecimal amount = new BigDecimal(payload.get("amount").toString());
         String date = payload.get("date").toString();
-        return Result.success(cycleRecordService.bookIncome(id, accountId, amount, date));
+        return Result.success(cycleRecordService.bookItem(id, itemId, accountId, amount, date));
+    }
+
+    @PostMapping("/{id}/unbook-item/{itemId}")
+    public Result<Map<String, Object>> unbookItem(@PathVariable Long id, @PathVariable String itemId) {
+        return Result.success(cycleRecordService.unbookItem(id, itemId));
     }
 }

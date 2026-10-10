@@ -7,10 +7,20 @@
             <template v-if="column.key === 'period'">
               {{ record.cycleStartDate }} 至 {{ record.cycleEndDate }}
             </template>
-            <template v-else-if="column.key === 'fixedDeposit'">
-              <a-space>
-                ¥{{ record.fixedDeposit }}
-                <a @click="editFixedDeposit(record)" style="font-size: 12px; margin-left: 8px;">修改</a>
+            <template v-else-if="column.key === 'fixedItems'">
+              <a-space wrap>
+                <template v-for="item in record.fixedItems || []" :key="item.id">
+                  <a-tag v-if="item.type === 'DEPOSIT'" color="green">
+                    {{ item.name }}: ¥{{ item.amount }}
+                  </a-tag>
+                  <a-tag v-else :color="item.isBooked ? 'default' : (item.type === 'INCOME' ? 'blue' : 'red')"
+                         :style="{ cursor: 'pointer' }"
+                         @click="handleTagClick(record, item)">
+                    {{ item.name }}: ¥{{ item.amount }}
+                    <span v-if="!item.isBooked"> (点此{{ item.type === 'INCOME' ? '到账' : '支付' }})</span>
+                    <span v-else style="color: #999;"> (已完成 - 点击撤销)</span>
+                  </a-tag>
+                </template>
               </a-space>
             </template>
             <template v-else-if="column.key === 'balance'">
@@ -20,11 +30,6 @@
             </template>
             <template v-else-if="column.key === 'income' || column.key === 'expense'">
               ¥{{ record[column.dataIndex] }}
-            </template>
-            <template v-else-if="column.key === 'action'">
-              <a-button type="primary" size="small" :disabled="record.isFixedIncomeBooked === 1" @click="showBookIncomeModal(record)">
-                {{ record.isFixedIncomeBooked === 1 ? '已到账' : '到账' }}
-              </a-button>
             </template>
           </template>
         </a-table>
@@ -58,28 +63,20 @@
       </a-tab-pane>
     </a-tabs>
 
-    <a-modal v-model:open="fdVisible" title="修改本期固存" @ok="handleFdOk">
+    <a-modal v-model:open="itemVisible" :title="itemModalTitle" @ok="handleItemOk">
       <a-form :label-col="{ span: 6 }" :wrapper-col="{ span: 16 }">
-        <a-form-item label="固存金额" required>
-          <a-input-number v-model:value="fdAmount" :min="0" :precision="2" style="width: 100%" />
+        <a-form-item :label="itemAmountLabel" required>
+          <a-input-number v-model:value="itemAmount" :min="0" :precision="2" style="width: 100%" />
         </a-form-item>
-      </a-form>
-    </a-modal>
-
-    <a-modal v-model:open="incomeVisible" title="确认固收到账" @ok="handleIncomeOk">
-      <a-form :label-col="{ span: 6 }" :wrapper-col="{ span: 16 }">
-        <a-form-item label="到账金额" required>
-          <a-input-number v-model:value="incomeAmount" :min="0" :precision="2" style="width: 100%" />
-        </a-form-item>
-        <a-form-item label="入账账户" required>
-          <a-select v-model:value="incomeAccountId" placeholder="请选择入账账户">
+        <a-form-item :label="itemAccountLabel" required>
+          <a-select v-model:value="itemAccountId" placeholder="请选择账户">
             <a-select-option v-for="acc in accounts" :key="acc.id" :value="acc.id">
               {{ acc.name }}
             </a-select-option>
           </a-select>
         </a-form-item>
-        <a-form-item label="入账日期" required>
-          <a-date-picker v-model:value="incomeDate" valueFormat="YYYY-MM-DD" style="width: 100%" />
+        <a-form-item :label="itemDateLabel" required>
+          <a-date-picker v-model:value="itemDate" valueFormat="YYYY-MM-DD" style="width: 100%" />
         </a-form-item>
       </a-form>
     </a-modal>
@@ -117,7 +114,7 @@
 
 <script lang="ts" setup>
 import { ref, onMounted } from 'vue';
-import { message } from 'ant-design-vue';
+import { message, Modal } from 'ant-design-vue';
 import request from '../utils/request';
 
 const activeKey = ref('cycle');
@@ -128,11 +125,10 @@ const accounts = ref<any[]>([]);
 
 const cycleColumns = [
   { title: '周期区间', key: 'period' },
+  { title: '固定项目', key: 'fixedItems' },
   { title: '总收入', dataIndex: 'income', key: 'income' },
-  { title: '固存 (必攒)', key: 'fixedDeposit' },
   { title: '总支出', dataIndex: 'expense', key: 'expense' },
-  { title: '周期结余', key: 'balance' },
-  { title: '操作', key: 'action' }
+  { title: '周期结余', key: 'balance' }
 ];
 
 const targetColumns = [
@@ -145,10 +141,18 @@ const targetColumns = [
   { title: '操作', key: 'action' }
 ];
 
-// 固存修改相关
-const fdVisible = ref(false);
-const fdEditingId = ref<number | null>(null);
-const fdAmount = ref<number>(0);
+// 项目记账相关
+const itemVisible = ref(false);
+const itemModalTitle = ref('');
+const itemAmountLabel = ref('');
+const itemAccountLabel = ref('');
+const itemDateLabel = ref('');
+
+const itemCycleId = ref<number | null>(null);
+const itemTargetId = ref<string>('');
+const itemAmount = ref<number>(0);
+const itemAccountId = ref<number | null>(null);
+const itemDate = ref<string>('');
 
 // 目标相关
 const targetVisible = ref(false);
@@ -166,55 +170,66 @@ const fetchData = async () => {
   accounts.value = await request.get('/accounts');
 };
 
-const editFixedDeposit = (record: any) => {
-  fdEditingId.value = record.id;
-  fdAmount.value = record.fixedDeposit;
-  fdVisible.value = true;
-};
-
-const handleFdOk = async () => {
-  if (fdEditingId.value) {
-    try {
-      await request.put(`/cycles/${fdEditingId.value}/fixed-deposit`, { fixedDeposit: fdAmount.value });
-      message.success('修改成功');
-      fdVisible.value = false;
-      fetchData();
-    } catch (e) {}
+const handleTagClick = (record: any, item: any) => {
+  if (!item.isBooked) {
+    showItemModal(record, item);
+  } else {
+    Modal.confirm({
+      title: '撤销已完成状态',
+      content: `确定要撤销「${item.name}」的完成状态吗？若关联了记账流水，系统将自动撤销该笔流水并回退账户余额。`,
+      okText: '确认撤销',
+      cancelText: '取消',
+      onOk: async () => {
+        try {
+          await request.post(`/cycles/${record.id}/unbook-item/${item.id}`);
+          message.success('已成功撤销完成状态');
+          fetchData();
+        } catch (e) {}
+      }
+    });
   }
 };
 
-const incomeVisible = ref(false);
-const incomeCycleId = ref<number | null>(null);
-const incomeAmount = ref<number>(0);
-const incomeAccountId = ref<number | null>(null);
-const incomeDate = ref<string>('');
-
-const showBookIncomeModal = (record: any) => {
-  incomeCycleId.value = record.id;
-  incomeAmount.value = record.fixedIncome || 0;
-  incomeAccountId.value = accounts.value.length > 0 ? accounts.value[0].id : null;
+const showItemModal = (record: any, item: any) => {
+  itemCycleId.value = record.id;
+  itemTargetId.value = item.id;
+  itemAmount.value = item.amount || 0;
+  itemAccountId.value = accounts.value.length > 0 ? accounts.value[0].id : null;
+  
+  if (item.type === 'INCOME') {
+    itemModalTitle.value = '确认固收到账';
+    itemAmountLabel.value = '到账金额';
+    itemAccountLabel.value = '入账账户';
+    itemDateLabel.value = '入账日期';
+  } else {
+    itemModalTitle.value = '确认固支扣款';
+    itemAmountLabel.value = '支付金额';
+    itemAccountLabel.value = '扣款账户';
+    itemDateLabel.value = '支付日期';
+  }
+  
   const today = new Date().toISOString().split('T')[0];
   if (today >= record.cycleStartDate && today <= record.cycleEndDate) {
-    incomeDate.value = today;
+    itemDate.value = today;
   } else {
-    incomeDate.value = record.cycleStartDate;
+    itemDate.value = record.cycleStartDate;
   }
-  incomeVisible.value = true;
+  itemVisible.value = true;
 };
 
-const handleIncomeOk = async () => {
-  if (!incomeAccountId.value || !incomeDate.value) {
+const handleItemOk = async () => {
+  if (!itemAccountId.value || !itemDate.value) {
     message.error('请填写完整信息');
     return;
   }
   try {
-    await request.post(`/cycles/${incomeCycleId.value}/book-income`, {
-      amount: incomeAmount.value,
-      accountId: incomeAccountId.value,
-      date: incomeDate.value
+    await request.post(`/cycles/${itemCycleId.value}/book-item/${itemTargetId.value}`, {
+      amount: itemAmount.value,
+      accountId: itemAccountId.value,
+      date: itemDate.value
     });
-    message.success('固收到账成功');
-    incomeVisible.value = false;
+    message.success('记账成功');
+    itemVisible.value = false;
     fetchData();
   } catch (e) {}
 };
