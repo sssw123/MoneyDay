@@ -12,7 +12,7 @@
           </a-tag>
         </template>
         <template v-else-if="column.key === 'isActive'">
-          <a-switch :checked="record.isActive === 1" @change="(val) => toggleActive(record, val)" />
+          <a-switch :checked="record.isActive === 1" @change="(val: boolean | string | number) => toggleActive(record, !!val)" />
         </template>
         <template v-else-if="column.key === 'action'">
           <a-space>

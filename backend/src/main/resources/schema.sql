@@ -3,7 +3,8 @@ CREATE TABLE IF NOT EXISTS `cycle_template` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
     `name` VARCHAR(50) NOT NULL,
     `start_day` INT NOT NULL COMMENT '1-31',
-    `is_default` TINYINT(1) DEFAULT 0
+    `is_default` TINYINT(1) DEFAULT 0,
+    `default_fixed_deposit` DECIMAL(18,2) NOT NULL DEFAULT 0.00 COMMENT '全局默认固存金额'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 INSERT INTO `cycle_template` (name, start_day, is_default) VALUES ('自然月', 1, 1);
@@ -67,9 +68,20 @@ CREATE TABLE IF NOT EXISTS `target` (
   `target_amount` DECIMAL(18,2) NOT NULL COMMENT '目标金额',
   `allocated_amount` DECIMAL(18,2) NOT NULL DEFAULT 0.00 COMMENT '已分配金额（存入的钱）',
   `deadline` DATE NULL COMMENT '截止日期',
+  `is_realized` TINYINT(1) NOT NULL DEFAULT 0 COMMENT '是否已实现',
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='攒钱目标表';
+
+-- 周期快照表 (Cycle Record)
+CREATE TABLE IF NOT EXISTS `cycle_record` (
+  `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+  `cycle_start_date` DATE NOT NULL COMMENT '周期开始日期',
+  `cycle_end_date` DATE NOT NULL COMMENT '周期结束日期',
+  `fixed_deposit` DECIMAL(18,2) NOT NULL DEFAULT 0.00 COMMENT '该周期的固存金额快照',
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='周期快照表';
 
 -- 月度预算表 (如果需要按周期单独存，或者只存一个全局通用预算)
 -- MVP 中我们可以只存一个全局总月度预算在 User 表，或者单独建立 budget 表记录每个周期的预算

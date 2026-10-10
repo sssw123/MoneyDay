@@ -13,10 +13,10 @@ public interface StatMapper {
     @Select("SELECT IFNULL(SUM(current_balance), 0) FROM account")
     BigDecimal getTotalAssets();
 
-    @Select("SELECT IFNULL(SUM(target_amount), 0) FROM target")
+    @Select("SELECT IFNULL(SUM(target_amount), 0) FROM target WHERE is_realized = 0")
     BigDecimal getTotalTargets();
 
-    @Select("SELECT IFNULL(SUM(allocated_amount), 0) FROM target")
+    @Select("SELECT IFNULL(SUM(allocated_amount), 0) FROM target WHERE is_realized = 0")
     BigDecimal getTargetAllocated();
 
     @Select("SELECT IFNULL(SUM(amount), 0) FROM transaction WHERE type = 1 AND transaction_date >= #{startDate} AND transaction_date <= #{endDate}")

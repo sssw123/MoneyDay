@@ -35,8 +35,11 @@
         <a-form-item label="起算日" required help="每月从几号开始算作新的一月（输入 31 代表每月末）">
           <a-input-number v-model:value="formState.startDay" :min="1" :max="31" style="width: 100%" />
         </a-form-item>
+        <a-form-item label="全局默认固存" help="所有新周期默认的必攒金额">
+          <a-input-number v-model:value="formState.defaultFixedDeposit" :min="0" style="width: 100%" />
+        </a-form-item>
         <a-form-item label="设为默认">
-          <a-switch :checked="formState.isDefault === 1" @change="(val) => formState.isDefault = val ? 1 : 0" />
+          <a-switch :checked="formState.isDefault === 1" @change="(val: boolean | string | number) => formState.isDefault = val ? 1 : 0" />
         </a-form-item>
       </a-form>
     </a-modal>
@@ -55,12 +58,14 @@ const editingId = ref<number | null>(null);
 const formState = ref({
   name: '',
   startDay: 1,
+  defaultFixedDeposit: 0,
   isDefault: 0
 });
 
 const columns = [
   { title: '模板名称', dataIndex: 'name', key: 'name' },
   { title: '起算日', key: 'startDay' },
+  { title: '全局默认固存', dataIndex: 'defaultFixedDeposit', key: 'defaultFixedDeposit' },
   { title: '是否默认', key: 'isDefault' },
   { title: '操作', key: 'action' }
 ];
@@ -71,7 +76,7 @@ const fetchTemplates = async () => {
 
 const showModal = () => {
   editingId.value = null;
-  formState.value = { name: '', startDay: 1, isDefault: 0 };
+  formState.value = { name: '', startDay: 1, defaultFixedDeposit: 0, isDefault: 0 };
   visible.value = true;
 };
 

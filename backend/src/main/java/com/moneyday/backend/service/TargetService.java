@@ -11,4 +11,5 @@ public interface TargetService {
     Target addTarget(Target target);
     Target updateTarget(Target target);
     void deleteTarget(Long id);
+    void realizeTarget(Long id, Long accountId);
 }

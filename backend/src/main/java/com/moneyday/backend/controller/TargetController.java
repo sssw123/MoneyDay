@@ -36,4 +36,14 @@ public class TargetController {
         targetService.deleteTarget(id);
         return Result.success(null);
     }
+
+    @PostMapping("/{id}/realize")
+    public Result<Void> realize(@PathVariable Long id, @RequestBody java.util.Map<String, Long> payload) {
+        Long accountId = payload.get("accountId");
+        if (accountId == null) {
+            throw new RuntimeException("请选择扣款账户");
+        }
+        targetService.realizeTarget(id, accountId);
+        return Result.success(null);
+    }
 }

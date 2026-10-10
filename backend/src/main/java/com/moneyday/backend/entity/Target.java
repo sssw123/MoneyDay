@@ -16,6 +16,7 @@ public class Target {
     private BigDecimal targetAmount;
     private BigDecimal allocatedAmount;
     private LocalDate deadline;
+    private Integer isRealized;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -29,6 +30,8 @@ public class Target {
     public void setAllocatedAmount(BigDecimal allocatedAmount) { this.allocatedAmount = allocatedAmount; }
     public LocalDate getDeadline() { return deadline; }
     public void setDeadline(LocalDate deadline) { this.deadline = deadline; }
+    public Integer getIsRealized() { return isRealized; }
+    public void setIsRealized(Integer isRealized) { this.isRealized = isRealized; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }

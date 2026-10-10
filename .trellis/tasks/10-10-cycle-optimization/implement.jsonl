@@ -1,0 +1,2 @@
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "Database standards (Money precision, timezone)"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend standards (Vue 3, Ant Design)"}

@@ -22,6 +22,9 @@ public class StatServiceImpl implements StatService {
     @Autowired
     private CycleTemplateMapper templateMapper;
 
+    @Autowired
+    private com.moneyday.backend.service.CycleRecordService cycleRecordService;
+
     public StatDTO getStats() {
         StatDTO dto = new StatDTO();
         dto.setTotalAssets(statMapper.getTotalAssets());
@@ -55,7 +58,13 @@ public class StatServiceImpl implements StatService {
 
         dto.setCurrentIncome(statMapper.getIncomeByDate(sDate, eDate));
         dto.setCurrentExpense(statMapper.getExpenseByDate(sDate, eDate));
-        dto.setCurrentBalance(dto.getCurrentIncome().subtract(dto.getCurrentExpense()));
+
+        // Get fixed deposit for current cycle
+        com.moneyday.backend.entity.CycleRecord record = cycleRecordService.getOrCreateSnapshot(startDate, endDate);
+
+        BigDecimal fixedDeposit = record.getFixedDeposit() != null ? record.getFixedDeposit() : BigDecimal.ZERO;
+        
+        dto.setCurrentBalance(dto.getCurrentIncome().subtract(fixedDeposit).subtract(dto.getCurrentExpense()));
         dto.setCategoryExpenses(statMapper.getCategoryExpensesByDate(sDate, eDate));
 
         return dto;

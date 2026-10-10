@@ -1,5 +1,5 @@
 package com.moneyday.backend.entity;
-
+import java.math.BigDecimal;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.IdType;
@@ -11,6 +11,7 @@ public class CycleTemplate {
     private String name;
     private Integer startDay;
     private Integer isDefault;
+    private BigDecimal defaultFixedDeposit;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -20,4 +21,6 @@ public class CycleTemplate {
     public void setStartDay(Integer startDay) { this.startDay = startDay; }
     public Integer getIsDefault() { return isDefault; }
     public void setIsDefault(Integer isDefault) { this.isDefault = isDefault; }
+    public BigDecimal getDefaultFixedDeposit() { return defaultFixedDeposit; }
+    public void setDefaultFixedDeposit(BigDecimal defaultFixedDeposit) { this.defaultFixedDeposit = defaultFixedDeposit; }
 }
