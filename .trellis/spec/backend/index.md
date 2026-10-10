@@ -22,3 +22,4 @@
 4. **全局统一响应 (Result)**:
    - 全局遵守 `{ code, msg, data }` 的返回体结构，配合 `GlobalExceptionHandler` 处理异常。
 5. **依赖注入**: 业务层采用 `Service` 接口与 `Impl` 实现类分离的结构，通过面向接口的方式进行 `@Autowired`。
+6. **Git 提交规范**: Commit 提交说明必须严格使用中文编写。格式要求为 `<type>: <中文简介>`（例如：`feat: 新增账单功能`, `docs: 更新规范文档`, `fix: 修复乱码问题`）。

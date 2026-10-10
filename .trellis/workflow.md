@@ -616,11 +616,11 @@ The AI drives a batched commit of this task's code changes so `/finish-work` can
    ```
    Snapshot every dirty path. If the working tree is clean, skip to 3.5.
 
-2. **Learn commit style** from recent history (so drafted messages blend in):
+2. **Learn commit style** from recent history:
    ```bash
    git log --oneline -5
    ```
-   Note the prefix convention (`feat:` / `fix:` / `chore:` / `docs:` ...), language (中文/English), and length style.
+   **强制约定**: Commit 提交说明必须严格使用中文编写（即使前缀是英文），格式必须为 `<type>: <中文简介>`（例如：`docs: 中文简介`，`feat: 新增账单周期推算逻辑`）。
 
 3. **Classify dirty files into two groups**:
    - **AI-edited this session** — files you wrote/edited via Edit/Write/Bash tool calls in this session. You know what changed and why.
