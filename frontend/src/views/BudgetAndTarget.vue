@@ -21,6 +21,11 @@
             <template v-else-if="column.key === 'income' || column.key === 'expense'">
               ¥{{ record[column.dataIndex] }}
             </template>
+            <template v-else-if="column.key === 'action'">
+              <a-button type="primary" size="small" :disabled="record.isFixedIncomeBooked === 1" @click="showBookIncomeModal(record)">
+                {{ record.isFixedIncomeBooked === 1 ? '已到账' : '到账' }}
+              </a-button>
+            </template>
           </template>
         </a-table>
       </a-tab-pane>
@@ -57,6 +62,24 @@
       <a-form :label-col="{ span: 6 }" :wrapper-col="{ span: 16 }">
         <a-form-item label="固存金额" required>
           <a-input-number v-model:value="fdAmount" :min="0" :precision="2" style="width: 100%" />
+        </a-form-item>
+      </a-form>
+    </a-modal>
+
+    <a-modal v-model:open="incomeVisible" title="确认固收到账" @ok="handleIncomeOk">
+      <a-form :label-col="{ span: 6 }" :wrapper-col="{ span: 16 }">
+        <a-form-item label="到账金额" required>
+          <a-input-number v-model:value="incomeAmount" :min="0" :precision="2" style="width: 100%" />
+        </a-form-item>
+        <a-form-item label="入账账户" required>
+          <a-select v-model:value="incomeAccountId" placeholder="请选择入账账户">
+            <a-select-option v-for="acc in accounts" :key="acc.id" :value="acc.id">
+              {{ acc.name }}
+            </a-select-option>
+          </a-select>
+        </a-form-item>
+        <a-form-item label="入账日期" required>
+          <a-date-picker v-model:value="incomeDate" valueFormat="YYYY-MM-DD" style="width: 100%" />
         </a-form-item>
       </a-form>
     </a-modal>
@@ -108,7 +131,8 @@ const cycleColumns = [
   { title: '总收入', dataIndex: 'income', key: 'income' },
   { title: '固存 (必攒)', key: 'fixedDeposit' },
   { title: '总支出', dataIndex: 'expense', key: 'expense' },
-  { title: '周期结余', key: 'balance' }
+  { title: '周期结余', key: 'balance' },
+  { title: '操作', key: 'action' }
 ];
 
 const targetColumns = [
@@ -157,6 +181,42 @@ const handleFdOk = async () => {
       fetchData();
     } catch (e) {}
   }
+};
+
+const incomeVisible = ref(false);
+const incomeCycleId = ref<number | null>(null);
+const incomeAmount = ref<number>(0);
+const incomeAccountId = ref<number | null>(null);
+const incomeDate = ref<string>('');
+
+const showBookIncomeModal = (record: any) => {
+  incomeCycleId.value = record.id;
+  incomeAmount.value = record.fixedIncome || 0;
+  incomeAccountId.value = accounts.value.length > 0 ? accounts.value[0].id : null;
+  const today = new Date().toISOString().split('T')[0];
+  if (today >= record.cycleStartDate && today <= record.cycleEndDate) {
+    incomeDate.value = today;
+  } else {
+    incomeDate.value = record.cycleStartDate;
+  }
+  incomeVisible.value = true;
+};
+
+const handleIncomeOk = async () => {
+  if (!incomeAccountId.value || !incomeDate.value) {
+    message.error('请填写完整信息');
+    return;
+  }
+  try {
+    await request.post(`/cycles/${incomeCycleId.value}/book-income`, {
+      amount: incomeAmount.value,
+      accountId: incomeAccountId.value,
+      date: incomeDate.value
+    });
+    message.success('固收到账成功');
+    incomeVisible.value = false;
+    fetchData();
+  } catch (e) {}
 };
 
 const showTargetModal = () => {

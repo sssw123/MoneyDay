@@ -12,6 +12,7 @@ public class CycleTemplate {
     private Integer startDay;
     private Integer isDefault;
     private BigDecimal defaultFixedDeposit;
+    private BigDecimal defaultFixedIncome;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -23,4 +24,6 @@ public class CycleTemplate {
     public void setIsDefault(Integer isDefault) { this.isDefault = isDefault; }
     public BigDecimal getDefaultFixedDeposit() { return defaultFixedDeposit; }
     public void setDefaultFixedDeposit(BigDecimal defaultFixedDeposit) { this.defaultFixedDeposit = defaultFixedDeposit; }
+    public BigDecimal getDefaultFixedIncome() { return defaultFixedIncome; }
+    public void setDefaultFixedIncome(BigDecimal defaultFixedIncome) { this.defaultFixedIncome = defaultFixedIncome; }
 }

@@ -27,4 +27,12 @@ public class CycleRecordController {
         BigDecimal newAmount = payload.get("fixedDeposit");
         return Result.success(cycleRecordService.updateFixedDeposit(id, newAmount));
     }
+
+    @PostMapping("/{id}/book-income")
+    public Result<Map<String, Object>> bookIncome(@PathVariable Long id, @RequestBody Map<String, Object> payload) {
+        Long accountId = Long.valueOf(payload.get("accountId").toString());
+        BigDecimal amount = new BigDecimal(payload.get("amount").toString());
+        String date = payload.get("date").toString();
+        return Result.success(cycleRecordService.bookIncome(id, accountId, amount, date));
+    }
 }

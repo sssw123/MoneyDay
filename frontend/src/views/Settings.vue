@@ -38,6 +38,9 @@
         <a-form-item label="全局默认固存" help="所有新周期默认的必攒金额">
           <a-input-number v-model:value="formState.defaultFixedDeposit" :min="0" style="width: 100%" />
         </a-form-item>
+        <a-form-item label="全局默认固收" help="所有新周期默认的固定收入（薪水）">
+          <a-input-number v-model:value="formState.defaultFixedIncome" :min="0" style="width: 100%" />
+        </a-form-item>
         <a-form-item label="设为默认">
           <a-switch :checked="formState.isDefault === 1" @change="(val: boolean | string | number) => formState.isDefault = val ? 1 : 0" />
         </a-form-item>
@@ -59,6 +62,7 @@ const formState = ref({
   name: '',
   startDay: 1,
   defaultFixedDeposit: 0,
+  defaultFixedIncome: 0,
   isDefault: 0
 });
 
@@ -66,6 +70,7 @@ const columns = [
   { title: '模板名称', dataIndex: 'name', key: 'name' },
   { title: '起算日', key: 'startDay' },
   { title: '全局默认固存', dataIndex: 'defaultFixedDeposit', key: 'defaultFixedDeposit' },
+  { title: '全局默认固收', dataIndex: 'defaultFixedIncome', key: 'defaultFixedIncome' },
   { title: '是否默认', key: 'isDefault' },
   { title: '操作', key: 'action' }
 ];
@@ -76,7 +81,7 @@ const fetchTemplates = async () => {
 
 const showModal = () => {
   editingId.value = null;
-  formState.value = { name: '', startDay: 1, defaultFixedDeposit: 0, isDefault: 0 };
+  formState.value = { name: '', startDay: 1, defaultFixedDeposit: 0, defaultFixedIncome: 0, isDefault: 0 };
   visible.value = true;
 };
 

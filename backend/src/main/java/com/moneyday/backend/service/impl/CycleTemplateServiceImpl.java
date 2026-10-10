@@ -29,7 +29,7 @@ public class CycleTemplateServiceImpl implements CycleTemplateService {
         }
         mapper.insert(template);
         if (template.getIsDefault() == 1) {
-            updateCurrentAndFutureCycles(template.getDefaultFixedDeposit());
+            updateCurrentAndFutureCycles(template.getDefaultFixedDeposit(), template.getDefaultFixedIncome());
         }
         return template;
     }
@@ -37,13 +37,15 @@ public class CycleTemplateServiceImpl implements CycleTemplateService {
     @Autowired
     private com.moneyday.backend.mapper.CycleRecordMapper cycleRecordMapper;
 
-    private void updateCurrentAndFutureCycles(java.math.BigDecimal newFixedDeposit) {
-        if (newFixedDeposit == null) return;
-        com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper<com.moneyday.backend.entity.CycleRecord> updateWrapper = 
+    private void updateCurrentAndFutureCycles(java.math.BigDecimal newFixedDeposit, java.math.BigDecimal newFixedIncome) {
+        com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper<com.moneyday.backend.entity.CycleRecord> updateWrapper =
             new com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper<>();
         updateWrapper.ge("cycle_end_date", java.time.LocalDate.now());
-        updateWrapper.set("fixed_deposit", newFixedDeposit);
-        cycleRecordMapper.update(null, updateWrapper);
+        if (newFixedDeposit != null) updateWrapper.set("fixed_deposit", newFixedDeposit);
+        if (newFixedIncome != null) updateWrapper.set("fixed_income", newFixedIncome);
+        if (newFixedDeposit != null || newFixedIncome != null) {
+            cycleRecordMapper.update(null, updateWrapper);
+        }
     }
 
     @Transactional
@@ -54,10 +56,8 @@ public class CycleTemplateServiceImpl implements CycleTemplateService {
             template.setIsDefault(0);
         }
         mapper.updateById(template);
-        
-        // If this template is now the default, propagate its fixed deposit to current/future cycles
         if (template.getIsDefault() == 1) {
-            updateCurrentAndFutureCycles(template.getDefaultFixedDeposit());
+            updateCurrentAndFutureCycles(template.getDefaultFixedDeposit(), template.getDefaultFixedIncome());
         }
         return template;
     }
@@ -71,10 +71,9 @@ public class CycleTemplateServiceImpl implements CycleTemplateService {
     public void setDefault(Long id) {
         mapper.clearDefault();
         mapper.setDefault(id);
-        
         CycleTemplate template = mapper.selectById(id);
         if (template != null) {
-            updateCurrentAndFutureCycles(template.getDefaultFixedDeposit());
+            updateCurrentAndFutureCycles(template.getDefaultFixedDeposit(), template.getDefaultFixedIncome());
         }
     }
 }

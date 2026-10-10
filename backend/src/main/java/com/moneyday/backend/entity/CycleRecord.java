@@ -15,6 +15,8 @@ public class CycleRecord {
     private LocalDate cycleStartDate;
     private LocalDate cycleEndDate;
     private BigDecimal fixedDeposit;
+    private BigDecimal fixedIncome;
+    private Integer isFixedIncomeBooked;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -26,6 +28,10 @@ public class CycleRecord {
     public void setCycleEndDate(LocalDate cycleEndDate) { this.cycleEndDate = cycleEndDate; }
     public BigDecimal getFixedDeposit() { return fixedDeposit; }
     public void setFixedDeposit(BigDecimal fixedDeposit) { this.fixedDeposit = fixedDeposit; }
+    public BigDecimal getFixedIncome() { return fixedIncome; }
+    public void setFixedIncome(BigDecimal fixedIncome) { this.fixedIncome = fixedIncome; }
+    public Integer getIsFixedIncomeBooked() { return isFixedIncomeBooked; }
+    public void setIsFixedIncomeBooked(Integer isFixedIncomeBooked) { this.isFixedIncomeBooked = isFixedIncomeBooked; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
