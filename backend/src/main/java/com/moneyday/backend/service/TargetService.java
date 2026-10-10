@@ -14,7 +14,7 @@ public class TargetService {
     private TargetMapper targetMapper;
 
     public List<Target> getAllTargets() {
-        return targetMapper.findAll();
+        return targetMapper.selectList(null);
     }
 
     public Target addTarget(Target target) {
@@ -23,7 +23,7 @@ public class TargetService {
     }
 
     public Target updateTarget(Target target) {
-        targetMapper.update(target);
+        targetMapper.updateById(target);
         return target;
     }
 

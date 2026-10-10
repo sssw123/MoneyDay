@@ -2,8 +2,8 @@
 
 ## 核心架构
 - **前端**：Vue 3 + TypeScript + Vite + Vue Router + Pinia，UI 框架采用 Ant Design Vue。采用响应式设计，优先适配手机端浏览。
-- **后端**：Java 17 + Spring Boot 3.x，提供 RESTful API，统一 `/api` 前缀。
-- **数据存储**：MySQL 8.0。数据库表由后端配合 MyBatis 进行管理，并使用迁移脚本进行版本控制。
+- **后端**：Java 17 + Spring Boot 3.x，提供 RESTful API，统一 `/api` 前缀。配置采用 `application.yml`。
+- **数据存储**：MySQL 8.0。数据库操作由后端配合 MyBatis-Plus 进行管理，极简 CRUD，并保留部分复杂 SQL 映射。
 
 ## 数据模型边界
 1. **User (用户)**：单用户自用，基础用户表。

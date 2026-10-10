@@ -20,11 +20,11 @@ public class TransactionService {
     private AccountMapper accountMapper;
 
     public List<Transaction> getAllTransactions() {
-        return transactionMapper.findAll();
+        return transactionMapper.selectList(null);
     }
 
     public Transaction getTransactionById(Long id) {
-        return transactionMapper.findById(id);
+        return transactionMapper.selectById(id);
     }
 
     @Transactional
@@ -38,14 +38,14 @@ public class TransactionService {
 
     @Transactional
     public Transaction updateTransaction(Transaction tx) {
-        Transaction oldTx = transactionMapper.findById(tx.getId());
+        Transaction oldTx = transactionMapper.selectById(tx.getId());
         if (oldTx == null) throw new IllegalArgumentException("Transaction not found");
 
         // 1. revert old
         applyTransactionToAccount(oldTx, true);
         
         // 2. update
-        transactionMapper.update(tx);
+        transactionMapper.updateById(tx);
         
         // 3. apply new
         applyTransactionToAccount(tx, false);
@@ -54,7 +54,7 @@ public class TransactionService {
 
     @Transactional
     public void deleteTransaction(Long id) {
-        Transaction oldTx = transactionMapper.findById(id);
+        Transaction oldTx = transactionMapper.selectById(id);
         if (oldTx != null) {
             applyTransactionToAccount(oldTx, true);
             transactionMapper.deleteById(id);
@@ -67,7 +67,7 @@ public class TransactionService {
             amount = amount.negate();
         }
 
-        // 1=收入, 2=支出, 3=转账
+        // 1=鏀跺叆, 2=鏀嚭, 3=杞处
         if (tx.getType() == 1) {
             updateBalance(tx.getAccountId(), amount);
         } else if (tx.getType() == 2) {
@@ -81,9 +81,9 @@ public class TransactionService {
     }
 
     private void updateBalance(Long accountId, BigDecimal delta) {
-        Account acc = accountMapper.findById(accountId);
+        Account acc = accountMapper.selectById(accountId);
         if (acc == null) throw new IllegalArgumentException("Account not found: " + accountId);
         acc.setCurrentBalance(acc.getCurrentBalance().add(delta));
-        accountMapper.update(acc);
+        accountMapper.updateById(acc);
     }
 }

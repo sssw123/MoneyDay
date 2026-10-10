@@ -4,9 +4,15 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.IdType;
+
+@TableName("transaction")
 public class Transaction {
+    @TableId(type = IdType.AUTO)
     private Long id;
-    private Integer type; // 1=收入, 2=支出, 3=转账
+    private Integer type; // 1=鏀跺叆, 2=鏀嚭, 3=杞处
     private BigDecimal amount;
     private LocalDate transactionDate;
     private Long categoryId;

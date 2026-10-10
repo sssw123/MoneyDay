@@ -14,7 +14,7 @@ public class BudgetService {
     private BudgetMapper budgetMapper;
 
     public List<Budget> getAllBudgets() {
-        return budgetMapper.findAll();
+        return budgetMapper.selectList(null);
     }
 
     public Budget addBudget(Budget budget) {
@@ -23,7 +23,7 @@ public class BudgetService {
     }
 
     public Budget updateBudget(Budget budget) {
-        budgetMapper.update(budget);
+        budgetMapper.updateById(budget);
         return budget;
     }
 

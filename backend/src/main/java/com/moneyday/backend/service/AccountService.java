@@ -14,11 +14,11 @@ public class AccountService {
     private AccountMapper accountMapper;
 
     public List<Account> getAllAccounts() {
-        return accountMapper.findAll();
+        return accountMapper.selectList(null);
     }
 
     public Account getAccountById(Long id) {
-        return accountMapper.findById(id);
+        return accountMapper.selectById(id);
     }
 
     public Account addAccount(Account account) {
@@ -30,7 +30,7 @@ public class AccountService {
     }
 
     public Account updateAccount(Account account) {
-        accountMapper.update(account);
+        accountMapper.updateById(account);
         return account;
     }
 

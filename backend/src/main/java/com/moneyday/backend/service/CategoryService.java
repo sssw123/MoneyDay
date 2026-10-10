@@ -14,11 +14,11 @@ public class CategoryService {
     private CategoryMapper categoryMapper;
 
     public List<Category> getAllCategories() {
-        return categoryMapper.findAll();
+        return categoryMapper.selectList(null);
     }
 
     public Category getCategoryById(Long id) {
-        return categoryMapper.findById(id);
+        return categoryMapper.selectById(id);
     }
 
     public Category addCategory(Category category) {
@@ -27,7 +27,7 @@ public class CategoryService {
     }
 
     public Category updateCategory(Category category) {
-        categoryMapper.update(category);
+        categoryMapper.updateById(category);
         return category;
     }
 

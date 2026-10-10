@@ -1,7 +1,7 @@
 # 执行计划与步骤拆解
 
 ## 阶段 1：工程初始化与基础设施搭建
-- [x] 后端 Spring Boot 骨架搭建，引入 MySQL、MyBatis 依赖。
+- [x] 后端 Spring Boot 骨架搭建，引入 MySQL、MyBatis-Plus 依赖，使用 `application.yml`。
 - [x] 配置全局时区为 `Asia/Shanghai`，全局异常处理，统一返回格式。
 - [x] 前端 Vue 3 + Vite 骨架搭建，引入 Ant Design Vue、Vue Router、Pinia。
 - [x] 配置前端 Axios 拦截器与开发环境 Proxy (`/api` -> 8080)。

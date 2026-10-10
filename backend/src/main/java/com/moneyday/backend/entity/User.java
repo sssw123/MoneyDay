@@ -2,7 +2,13 @@ package com.moneyday.backend.entity;
 
 import java.time.LocalDateTime;
 
+import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.IdType;
+
+@TableName("user")
 public class User {
+    @TableId(type = IdType.AUTO)
     private Long id;
     private String username;
     private String password;

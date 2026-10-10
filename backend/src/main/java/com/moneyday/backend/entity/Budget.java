@@ -4,7 +4,13 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.IdType;
+
+@TableName("budget")
 public class Budget {
+    @TableId(type = IdType.AUTO)
     private Long id;
     private BigDecimal amount;
     private LocalDate cycleStartDate;

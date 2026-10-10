@@ -2,11 +2,17 @@ package com.moneyday.backend.entity;
 
 import java.time.LocalDateTime;
 
+import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.IdType;
+
+@TableName("category")
 public class Category {
+    @TableId(type = IdType.AUTO)
     private Long id;
     private String name;
-    private Integer type; // 1=收入, 2=支出
-    private Integer isActive; // 1=是, 0=否
+    private Integer type; // 1=income, 2=expense
+    private Integer isActive; // 1=yes, 0=no
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 

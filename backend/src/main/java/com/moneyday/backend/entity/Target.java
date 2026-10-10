@@ -4,7 +4,13 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.IdType;
+
+@TableName("target")
 public class Target {
+    @TableId(type = IdType.AUTO)
     private Long id;
     private String name;
     private BigDecimal targetAmount;

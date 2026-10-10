@@ -15,7 +15,7 @@ public class CycleTemplateService {
     private CycleTemplateMapper mapper;
 
     public List<CycleTemplate> getAll() {
-        return mapper.findAll();
+        return mapper.selectList(null);
     }
 
     @Transactional
@@ -36,7 +36,7 @@ public class CycleTemplateService {
         } else {
             template.setIsDefault(0);
         }
-        mapper.update(template);
+        mapper.updateById(template);
         return template;
     }
 
