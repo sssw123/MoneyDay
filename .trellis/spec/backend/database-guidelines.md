@@ -15,7 +15,7 @@
    - 自增主键字段必须显式使用 `@TableId(type = IdType.AUTO)`。
 2. **Mapper 接口**:
    - 基础 CRUD 统一继承 `BaseMapper<T>`，保持 Mapper 层的极简。
-   - 复杂的关联查询或特定聚合计算（如 `StatMapper` 中的数据看板聚合查询）允许保留手写 SQL。
+   - 复杂的关联查询或特定聚合计算（如 `StatMapper` 中的数据看板聚合查询）允许保留手写 SQL。对于特别复杂的 SQL 语句（多表联查、长文本），强烈建议在 `resources/mapper/` 目录下添加对应的 XML 文件进行编写与统一管理，以保持 Java 接口的整洁。
 3. **事务管理**:
    - 对多表操作或跨账户金额更新（如 TransactionService）必须在服务实现层 (Impl) 方法上添加 `@Transactional` 注解保证强一致性回滚。
 
