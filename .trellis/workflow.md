@@ -649,6 +649,7 @@ The AI drives a batched commit of this task's code changes so `/finish-work` can
 7. **On rejection** (user replies "不行" / "我自己来" / "manual" / any pushback on the plan): stop. Do not attempt a second plan. The user will commit by hand; you skip ahead to 3.5 once they confirm.
 
 **Rules**:
+- **NEVER AUTO-COMMIT**: You must NEVER run `git commit` automatically. Even if the user approved a plan earlier, you must ALWAYS stop after writing code, present the specific commit plan (files and messages), and wait for explicit confirmation before executing the commit.
 - No `git commit --amend` anywhere — three-stage three-commit flow (work commits → archive commit → journal commit).
 - Never push to remote in this step.
 - If the user wants different message wording but accepts the file grouping, edit the message and re-confirm once — but if they reject the grouping, exit to manual mode.
