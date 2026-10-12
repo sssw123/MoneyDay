@@ -27,3 +27,25 @@
 ### Status
 
 [OK] **Completed**
+
+
+## Session 2: 透支分期提前还款与历史补录排期优化
+<!-- trellis-session: v=2 fp=fd15fd548c708790 -->
+
+**Date**: 2026-10-12
+**Task**: 透支分期提前还款与历史补录排期优化
+**Branch**: `master`
+
+### Summary
+
+支持分期提前还期与提前结清双轨操作、历史已还期数补录及排期自动顺延防重扣款
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `2152fbe` | feat(liability): 优化透支分期提前还款与历史补录排期机制 |
+
+### Status
+
+[OK] **Completed**
