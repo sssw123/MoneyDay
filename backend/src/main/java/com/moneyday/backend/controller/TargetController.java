@@ -2,6 +2,7 @@ package com.moneyday.backend.controller;
 
 import com.moneyday.backend.common.Result;
 import com.moneyday.backend.entity.Target;
+import com.moneyday.backend.entity.TargetVO;
 import com.moneyday.backend.service.TargetService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -19,7 +20,7 @@ public class TargetController {
     private com.moneyday.backend.service.CycleRecordService cycleRecordService;
 
     @GetMapping
-    public Result<List<Target>> getAll() {
+    public Result<List<TargetVO>> getAll() {
         return Result.success(targetService.getAllTargets());
     }
 
@@ -52,6 +53,12 @@ public class TargetController {
             throw new RuntimeException("请选择扣款账户");
         }
         targetService.realizeTarget(id, accountId);
+        return Result.success(null);
+    }
+
+    @PostMapping("/{id}/unrealize")
+    public Result<Void> unrealize(@PathVariable Long id) {
+        targetService.unrealizeTarget(id);
         return Result.success(null);
     }
 }

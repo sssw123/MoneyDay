@@ -1,6 +1,10 @@
 <template>
-  <a-layout style="min-height: 100vh">
-    <a-layout-sider v-model:collapsed="collapsed" collapsible>
+  <a-layout has-sider style="min-height: 100vh">
+    <a-layout-sider
+      v-model:collapsed="collapsed"
+      collapsible
+      :style="{ overflow: 'auto', height: '100vh', position: 'fixed', left: 0, top: 0, bottom: 0, zIndex: 100 }"
+    >
       <div class="logo">MoneyDay</div>
       <a-menu v-model:selectedKeys="selectedKeys" theme="dark" mode="inline">
         <a-menu-item key="/">
@@ -18,12 +22,15 @@
         <a-menu-item key="/budgets">
           <router-link to="/budgets">预算与目标</router-link>
         </a-menu-item>
+        <a-menu-item key="/wishlist">
+          <router-link to="/wishlist">心愿单</router-link>
+        </a-menu-item>
         <a-menu-item key="/settings">
           <router-link to="/settings">系统设置</router-link>
         </a-menu-item>
       </a-menu>
     </a-layout-sider>
-    <a-layout>
+    <a-layout :style="{ marginLeft: collapsed ? '80px' : '200px', transition: 'all 0.2s', minHeight: '100vh' }">
       <a-layout-header style="background: #fff; padding: 0" />
       <a-layout-content style="margin: 16px">
         <div :style="{ padding: '24px', background: '#fff', minHeight: '360px' }">

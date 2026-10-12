@@ -30,7 +30,8 @@ public class StatServiceImpl implements StatService {
         dto.setTotalAssets(statMapper.getTotalAssets());
         dto.setTotalTargets(statMapper.getTotalTargets());
         dto.setTargetAllocated(statMapper.getTargetAllocated());
-        dto.setIsOverdraft(dto.getTotalAssets().compareTo(dto.getTotalTargets()) < 0);
+        // 当前阶段心愿单不占预留资金，可用净资产即为总资产，不触发目标透支
+        dto.setIsOverdraft(false);
 
         CycleTemplate defaultTemplate = templateMapper.findDefault();
         int startDay = defaultTemplate != null ? defaultTemplate.getStartDay() : 1;
@@ -75,7 +76,8 @@ public class StatServiceImpl implements StatService {
         BigDecimal balance = dto.getCurrentIncome().subtract(fixedDeposit).subtract(dto.getCurrentExpense());
         dto.setCurrentBalance(balance);
         dto.setCurrentFinalBalance(fixedDeposit.add(balance));
-        dto.setAvailableAssets(dto.getTotalAssets().subtract(dto.getTotalTargets()));
+        // 可用净资产即为总资产（心愿单与目标不锁定预留资金）
+        dto.setAvailableAssets(dto.getTotalAssets());
         dto.setCumulativeBalance(cycleRecordService.getTotalCumulativeBalance());
         dto.setCategoryExpenses(statMapper.getCategoryExpensesByDate(sDate, eDate));
 

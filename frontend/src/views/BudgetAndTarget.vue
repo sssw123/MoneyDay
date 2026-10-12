@@ -35,23 +35,45 @@
         </a-table>
       </a-tab-pane>
 
-      <a-tab-pane key="target" tab="攒钱目标">
-        <div style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
-          <a-space>
+      <a-tab-pane key="target" tab="长期目标">
+        <div style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+          <a-space wrap>
             <a-button type="primary" @click="showTargetModal">新增目标</a-button>
-            <span style="font-size: 14px; color: #666; margin-left: 12px;">
-              当前全局累计结余池:
-              <b :style="{ color: cumulativeBalance >= 0 ? '#52c41a' : '#ff4d4f', fontSize: '16px' }">
-                ¥{{ cumulativeBalance }}
+            <span style="font-size: 14px; color: #666; margin-left: 8px;">
+              全部总资产 (资产目标托底):
+              <b :style="{ color: totalAssets >= 0 ? '#722ed1' : '#ff4d4f', fontSize: '15px' }">
+                ¥{{ totalAssets }}
               </b>
             </span>
           </a-space>
         </div>
-        <a-table :dataSource="targets" :columns="targetColumns" rowKey="id">
+        <a-table :dataSource="longTermTargets" :columns="targetColumns" rowKey="id">
           <template #bodyCell="{ column, record }">
-            <template v-if="column.key === 'progress'">
-              <a-progress :percent="getProgress(record)"
-                          :status="getProgress(record) >= 100 ? 'success' : 'active'" />
+            <template v-if="column.key === 'targetAmount'">
+              ¥{{ record.targetAmount }}
+            </template>
+            <template v-else-if="column.key === 'progress'">
+              <a-progress :percent="record.progress || 0"
+                          :status="(record.progress || 0) >= 100 ? 'success' : 'active'" />
+            </template>
+            <template v-else-if="column.key === 'estimatedCompletionDate'">
+              <span v-if="record.isRealized === 1">-</span>
+              <a-tag v-else-if="record.estimatedCompletionDate === '当前可实现'" color="green">
+                当前可实现
+              </a-tag>
+              <a-tooltip v-else-if="record.estimatedCompletionDate === '无法预估'" :title="record.estimatedReason || '存钱速度无盈余，无法预估'">
+                <a-tag color="default">无法预估</a-tag>
+              </a-tooltip>
+              <a-tooltip v-else-if="record.isEstimatedFallback" :title="record.estimatedReason">
+                <a-tag color="orange" style="cursor: pointer;">
+                  {{ record.estimatedCompletionDate }} ⚠
+                </a-tag>
+              </a-tooltip>
+              <a-tooltip v-else :title="record.estimatedReason">
+                <span style="color: #1890ff; font-weight: 500;">
+                  {{ record.estimatedCompletionDate }}
+                </span>
+              </a-tooltip>
             </template>
             <template v-else-if="column.key === 'isRealized'">
               <a-tag :color="record.isRealized === 1 ? 'green' : 'blue'">
@@ -60,16 +82,22 @@
             </template>
             <template v-else-if="column.key === 'action'">
               <a-space>
-                <a-tooltip :title="cumulativeBalance < record.targetAmount ? '当前累计结余不足以实现此目标' : ''">
-                  <a-button
-                    type="primary"
-                    size="small"
-                    v-if="record.isRealized === 0"
-                    :disabled="cumulativeBalance < record.targetAmount"
-                    @click="showRealizeModal(record)">
-                    实现目标
-                  </a-button>
-                </a-tooltip>
+                <template v-if="record.isRealized === 0">
+                  <a-tooltip :title="totalAssets < record.targetAmount ? `当前总资产不足以实现此目标 (缺口: ¥${record.gap || 0})` : ''">
+                    <a-button
+                      type="primary"
+                      size="small"
+                      :disabled="totalAssets < record.targetAmount"
+                      @click="showRealizeModal(record)">
+                      实现目标
+                    </a-button>
+                  </a-tooltip>
+                </template>
+                <template v-else>
+                  <a-popconfirm title="确定撤销该目标的实现状态吗？扣款流水将被删除并退回账户余额" @confirm="handleUnrealize(record)">
+                    <a style="color: #ff4d4f">撤销</a>
+                  </a-popconfirm>
+                </template>
                 <a @click="editTarget(record)">编辑</a>
                 <a-popconfirm title="确定删除吗？" @confirm="deleteTarget(record.id)">
                   <a style="color: red">删除</a>
@@ -131,14 +159,14 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { message, Modal } from 'ant-design-vue';
 import request from '../utils/request';
 
 const activeKey = ref('cycle');
 
 const cycles = ref([]);
-const targets = ref([]);
+const targets = ref<any[]>([]);
 const accounts = ref<any[]>([]);
 
 const cycleColumns = [
@@ -150,24 +178,28 @@ const cycleColumns = [
 ];
 
 const targetColumns = [
-  { title: '状态', key: 'isRealized' },
+  { title: '状态', key: 'isRealized', width: 90 },
   { title: '目标名称', dataIndex: 'name', key: 'name' },
-  { title: '目标金额', dataIndex: 'targetAmount', key: 'targetAmount' },
-  { title: '开始时间', dataIndex: 'startDate', key: 'startDate' },
+  { title: '目标金额', key: 'targetAmount' },
+  { title: '立项时间', dataIndex: 'startDate', key: 'startDate' },
   { title: '进度', key: 'progress' },
+  { title: '预计实现时间', key: 'estimatedCompletionDate' },
   { title: '截止日期', dataIndex: 'deadline', key: 'deadline' },
   { title: '操作', key: 'action' }
 ];
 
+// 长期资产目标过滤
+const longTermTargets = computed(() => {
+  return targets.value.filter(t => t.type === 'LONG_TERM');
+});
+
 // 累计结余池
 const cumulativeBalance = ref(0);
 
-const getProgress = (record: any) => {
-  if (record.isRealized === 1) return 100;
-  if (!cumulativeBalance.value || cumulativeBalance.value <= 0) return 0;
-  if (cumulativeBalance.value >= record.targetAmount) return 100;
-  return Math.round((cumulativeBalance.value / record.targetAmount) * 100);
-};
+// 总资产 (所有账户余额之和)
+const totalAssets = computed(() => {
+  return Math.round(accounts.value.reduce((sum, acc) => sum + (Number(acc.currentBalance) || 0), 0) * 100) / 100;
+});
 
 // 项目记账相关
 const itemVisible = ref(false);
@@ -188,6 +220,7 @@ const targetEditingId = ref<number | null>(null);
 const targetForm = ref({
   name: '',
   targetAmount: 0,
+  type: 'LONG_TERM',
   startDate: new Date().toISOString().split('T')[0],
   deadline: ''
 });
@@ -195,6 +228,7 @@ const targetForm = ref({
 // 目标实现相关
 const realizeVisible = ref(false);
 const realizeTargetId = ref<number | null>(null);
+const realizeTargetRecord = ref<any>(null);
 const realizeAccountId = ref<number | null>(null);
 
 const fetchData = async () => {
@@ -273,6 +307,7 @@ const showTargetModal = () => {
   targetForm.value = {
     name: '',
     targetAmount: 0,
+    type: 'LONG_TERM',
     startDate: new Date().toISOString().split('T')[0],
     deadline: ''
   };
@@ -281,7 +316,13 @@ const showTargetModal = () => {
 
 const editTarget = (record: any) => {
   targetEditingId.value = record.id;
-  targetForm.value = { ...record };
+  targetForm.value = {
+    name: record.name,
+    targetAmount: record.targetAmount,
+    type: 'LONG_TERM',
+    startDate: record.startDate,
+    deadline: record.deadline || ''
+  };
   targetVisible.value = true;
 };
 
@@ -307,8 +348,9 @@ const deleteTarget = async (id: number) => {
 };
 
 const showRealizeModal = (record: any) => {
+  realizeTargetRecord.value = record;
   realizeTargetId.value = record.id;
-  realizeAccountId.value = null;
+  realizeAccountId.value = accounts.value.length > 0 ? accounts.value[0].id : null;
   realizeVisible.value = true;
 };
 
@@ -321,6 +363,14 @@ const handleRealizeOk = async () => {
     await request.post(`/targets/${realizeTargetId.value}/realize`, { accountId: realizeAccountId.value });
     message.success('目标实现成功！账户已扣款');
     realizeVisible.value = false;
+    fetchData();
+  } catch (e) {}
+};
+
+const handleUnrealize = async (record: any) => {
+  try {
+    await request.post(`/targets/${record.id}/unrealize`);
+    message.success('已成功撤销目标，资金已退回账户！');
     fetchData();
   } catch (e) {}
 };
