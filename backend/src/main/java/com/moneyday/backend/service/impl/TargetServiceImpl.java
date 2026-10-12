@@ -207,7 +207,10 @@ public class TargetServiceImpl implements TargetService {
             } else if (templateBaselineNetAccumulation.compareTo(BigDecimal.ZERO) > 0) {
                 velocity = templateBaselineNetAccumulation;
                 isFallback = true;
-                reason = "历史结余为负，此为按模板严格执行的基准净沉淀预计时间 (固收-固支 = ¥" + templateBaselineNetAccumulation.setScale(2, RoundingMode.HALF_UP) + "/周期)";
+                String prefix = (avgHistoricalBalance == null || avgHistoricalBalance.compareTo(BigDecimal.ZERO) == 0)
+                        ? "暂无充足历史周期盈余，此为按模板严格执行的基准净沉淀预计时间"
+                        : "历史平均结余为负，此为按模板严格执行的基准净沉淀预计时间";
+                reason = prefix + " (固收-固支 = ¥" + templateBaselineNetAccumulation.setScale(2, RoundingMode.HALF_UP) + "/周期)";
             } else {
                 velocity = BigDecimal.ZERO;
                 isFallback = false;

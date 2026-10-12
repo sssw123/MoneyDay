@@ -2,7 +2,7 @@
   <div>
     <div style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
       <a-space wrap>
-        <a-button type="primary" @click="showTargetModal">新增长期目标</a-button>
+        <a-button type="primary" @click="showTargetModal">新增目标</a-button>
         <span style="font-size: 14px; color: #666; margin-left: 8px;">
           可用净资产 (总资产 - 待还负债):
           <b :style="{ color: availableNetAssets >= 0 ? '#722ed1' : '#ff4d4f', fontSize: '16px' }">
@@ -10,7 +10,7 @@
           </b>
         </span>
         <span style="font-size: 13px; color: #999; margin-left: 8px;">
-          (买车、买房、大额储备等长期资产，以可用净资产为真实托底标尺)
+          (买车、买房、大额储备等，以可用净资产为真实托底标尺)
         </span>
       </a-space>
     </div>
@@ -77,7 +77,7 @@
     </a-table>
 
     <!-- 新增 / 编辑目标弹窗 -->
-    <a-modal v-model:open="targetVisible" :title="targetEditingId ? '编辑长期目标' : '新增长期目标'" @ok="handleTargetOk">
+    <a-modal v-model:open="targetVisible" :title="targetEditingId ? '编辑目标' : '新增目标'" @ok="handleTargetOk">
       <a-form :model="targetForm" :label-col="{ span: 6 }" :wrapper-col="{ span: 16 }">
         <a-form-item label="目标名称" required>
           <a-input v-model:value="targetForm.name" placeholder="如：买车、购房首付、大额储蓄金" />
@@ -95,7 +95,7 @@
     </a-modal>
 
     <!-- 实现目标弹窗 -->
-    <a-modal v-model:open="realizeVisible" title="实现长期目标（扣款设定）" @ok="handleRealizeOk">
+    <a-modal v-model:open="realizeVisible" title="实现目标（扣款设定）" @ok="handleRealizeOk">
       <a-form :label-col="{ span: 6 }" :wrapper-col="{ span: 16 }">
         <a-form-item label="扣款账户" required help="实现目标将生成一笔真实支出记录，分类自动绑定为【目标】">
           <a-select v-model:value="realizeAccountId" placeholder="请选择扣款账户">
@@ -208,7 +208,7 @@ const handleRealizeOk = async () => {
   }
   try {
     await request.post(`/targets/${realizeTargetId.value}/realize`, { accountId: realizeAccountId.value });
-    message.success('长期目标实现成功！账户已扣款');
+    message.success('目标实现成功！账户已扣款');
     realizeVisible.value = false;
     fetchData();
   } catch (e) {}

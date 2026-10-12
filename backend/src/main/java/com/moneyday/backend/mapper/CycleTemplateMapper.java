@@ -11,8 +11,11 @@ public interface CycleTemplateMapper extends BaseMapper<CycleTemplate> {
 
     
 
-    @Select("SELECT * FROM cycle_template WHERE is_default = 1 LIMIT 1")
-    CycleTemplate findDefault();
+    default CycleTemplate findDefault() {
+        return selectOne(new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<CycleTemplate>()
+                .eq("is_default", 1)
+                .last("LIMIT 1"));
+    }
 
 
 

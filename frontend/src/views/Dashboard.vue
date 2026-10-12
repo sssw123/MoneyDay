@@ -24,7 +24,7 @@
             ¥{{ stats.availableAssets }}
           </h2>
           <div style="font-size: 13px; color: #666;">
-            长期资产目标的真实托底池
+            目标的真实托底池
           </div>
         </a-card>
       </a-col>
@@ -78,7 +78,7 @@
               {{ stats.currentFinalBalance >= 0 ? '¥' + stats.currentFinalBalance : '-¥' + Math.abs(stats.currentFinalBalance) }}
             </h1>
             <div :style="{ color: stats.currentFinalBalance >= 0 ? '#52c41a' : '#ff4d4f', fontSize: '12px', marginTop: '4px' }">
-              固存 + 结余/超支 (推进长期资产目标)
+              固存 + 结余/超支 (推进目标)
             </div>
           </div>
         </a-col>
@@ -118,10 +118,10 @@
       </a-col>
     </a-row>
 
-    <!-- 第四行：长期资产目标快捷实现 与 心愿单快捷兑现 -->
+    <!-- 第四行：目标快捷实现 与 心愿单快捷兑现 -->
     <a-row :gutter="16" style="margin-top: 24px;">
       <a-col :span="12">
-        <a-card title="长期资产目标快捷实现">
+        <a-card title="目标快捷实现">
           <a-table :dataSource="targets" :columns="longTermColumns" rowKey="id" :pagination="false" size="small">
             <template #bodyCell="{ column, record }">
               <template v-if="column.key === 'targetAmount'">
@@ -232,7 +232,7 @@
     </a-row>
 
     <!-- 实现目标 / 心愿弹窗 -->
-    <a-modal v-model:open="realizeVisible" :title="realizeKind === 'TARGET' ? '实现长期目标（扣款设定）' : '兑现心愿（扣款设定）'" @ok="handleRealizeOk">
+    <a-modal v-model:open="realizeVisible" :title="realizeKind === 'TARGET' ? '实现目标（扣款设定）' : '兑现心愿（扣款设定）'" @ok="handleRealizeOk">
       <div v-if="realizeKind === 'WISHLIST' && stats.cumulativeBalance < (realizeItem?.targetAmount || 0)" style="margin-bottom: 16px;">
         <a-alert
           type="warning"
@@ -335,7 +335,7 @@ const handleRealizeOk = async () => {
   try {
     if (realizeKind.value === 'TARGET') {
       await request.post(`/targets/${realizeItem.value.id}/realize`, { accountId: realizeAccountId.value });
-      message.success('长期目标实现成功！账户已扣款');
+      message.success('目标实现成功！账户已扣款');
     } else {
       await request.post(`/wishlists/${realizeItem.value.id}/realize`, { accountId: realizeAccountId.value });
       message.success('心愿兑现成功！账户已扣款');

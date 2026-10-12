@@ -168,7 +168,10 @@ public class WishlistServiceImpl implements WishlistService {
                     isFallback = true;
                     if (templateBaselineBalance.compareTo(BigDecimal.ZERO) > 0) {
                         speed = templateBaselineBalance;
-                        reason = String.format("历史周期平均结余无盈余，假定严格执行模板预算 (¥%.2f/周期) 推算", speed.doubleValue());
+                        String prefix = (avgHistoricalBalance == null || avgHistoricalBalance.compareTo(BigDecimal.ZERO) == 0)
+                                ? "暂无充足历史周期盈余，假定严格执行模板预算"
+                                : "历史周期平均结余无盈余，假定严格执行模板预算";
+                        reason = String.format("%s (¥%.2f/周期) 推算", prefix, speed.doubleValue());
                     } else {
                         speed = BigDecimal.ZERO;
                         reason = "历史结余与模板预算结余均无正向盈余，无法预估达成时间";
