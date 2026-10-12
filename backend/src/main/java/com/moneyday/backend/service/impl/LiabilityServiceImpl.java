@@ -99,12 +99,40 @@ public class LiabilityServiceImpl implements LiabilityService {
         if (liability.getRepaymentDay() == null) {
             liability.setRepaymentDay(10);
         }
+
+        // 推算/校验初始下一次还款日
+        if (liability.getNextRepaymentDate() == null) {
+            int rDay = liability.getRepaymentDay();
+            LocalDate today = LocalDate.now();
+            int actualDay = Math.min(rDay, today.lengthOfMonth());
+            LocalDate cand = today.withDayOfMonth(actualDay);
+            if (cand.isBefore(today)) {
+                LocalDate nextM = today.plusMonths(1);
+                cand = nextM.withDayOfMonth(Math.min(rDay, nextM.lengthOfMonth()));
+            }
+            liability.setNextRepaymentDate(cand);
+        }
+
+        // 检查已还期数是否已满
+        if (liability.getTotalPeriods() != null && liability.getCurrentPeriod() >= liability.getTotalPeriods()) {
+            liability.setStatus("SETTLED");
+            liability.setSettledAt(LocalDateTime.now());
+            liability.setNextRepaymentDate(null);
+        }
+
         if (liability.getCategoryId() == null) {
             QueryWrapper<Category> qw = new QueryWrapper<>();
             qw.eq("name", "分期还款").eq("type", 2).last("LIMIT 1");
             Category cat = categoryMapper.selectOne(qw);
             if (cat != null) {
                 liability.setCategoryId(cat.getId());
+            } else {
+                QueryWrapper<Category> anyQw = new QueryWrapper<>();
+                anyQw.eq("type", 2).last("LIMIT 1");
+                Category anyCat = categoryMapper.selectOne(anyQw);
+                if (anyCat != null) {
+                    liability.setCategoryId(anyCat.getId());
+                }
             }
         }
         liabilityMapper.insert(liability);
@@ -113,6 +141,16 @@ public class LiabilityServiceImpl implements LiabilityService {
 
     @Override
     public Liability updateLiability(Liability liability) {
+        if (liability.getTotalPeriods() != null && liability.getCurrentPeriod() != null) {
+            if (liability.getCurrentPeriod() >= liability.getTotalPeriods()) {
+                liability.setStatus("SETTLED");
+                liability.setSettledAt(LocalDateTime.now());
+                liability.setNextRepaymentDate(null);
+            } else if ("SETTLED".equalsIgnoreCase(liability.getStatus())) {
+                liability.setStatus("REPAYING");
+                liability.setSettledAt(null);
+            }
+        }
         liabilityMapper.updateById(liability);
         return liability;
     }
@@ -120,6 +158,68 @@ public class LiabilityServiceImpl implements LiabilityService {
     @Override
     public void deleteLiability(Long id) {
         liabilityMapper.deleteById(id);
+    }
+
+    @Override
+    @Transactional
+    public void repayPeriods(Long id, Integer periods, BigDecimal amount, Long accountId) {
+        Liability liability = liabilityMapper.selectById(id);
+        if (liability == null || "SETTLED".equalsIgnoreCase(liability.getStatus())) {
+            throw new RuntimeException("负债不存在或已结清");
+        }
+
+        int curP = liability.getCurrentPeriod() != null ? liability.getCurrentPeriod() : 0;
+        int totalP = liability.getTotalPeriods() != null ? liability.getTotalPeriods() : 1;
+        int remainingP = totalP - curP;
+
+        if (periods == null || periods < 1 || periods > remainingP) {
+            throw new IllegalArgumentException("归还期数无效，最多可还剩余 " + remainingP + " 期");
+        }
+
+        Account account = accountMapper.selectById(accountId);
+        if (account == null) {
+            throw new IllegalArgumentException("扣款账户不存在");
+        }
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("还款金额必须大于0");
+        }
+        if (account.getCurrentBalance().compareTo(amount) < 0) {
+            throw new IllegalArgumentException("扣款账户余额不足！当前余额: ¥" + account.getCurrentBalance() + "，应还: ¥" + amount);
+        }
+
+        // 1. 生成真实支出流水
+        Transaction tx = new Transaction();
+        tx.setType(2); // 支出
+        tx.setAmount(amount);
+        tx.setTransactionDate(LocalDate.now());
+        tx.setAccountId(accountId);
+        tx.setCategoryId(liability.getCategoryId());
+        tx.setLiabilityId(liability.getId());
+        String periodRemark = (periods == 1)
+                ? String.format("【提前还款】%s (第%d期)", liability.getName(), curP + 1)
+                : String.format("【提前还款】%s (第%d-%d期)", liability.getName(), curP + 1, curP + periods);
+        tx.setRemark(periodRemark);
+        transactionService.addTransaction(tx);
+
+        // 2. 推进期数与状态
+        int newCurrentPeriod = curP + periods;
+        liability.setCurrentPeriod(newCurrentPeriod);
+
+        if (newCurrentPeriod >= totalP) {
+            liability.setStatus("SETTLED");
+            liability.setSettledAt(LocalDateTime.now());
+            liability.setNextRepaymentDate(null);
+        } else {
+            // 3. 顺延下一次还款日 (按所还期数往后推 N 个月，对齐每月还款日)
+            LocalDate baseDate = liability.getNextRepaymentDate();
+            if (baseDate == null) {
+                baseDate = LocalDate.now();
+            }
+            LocalDate shifted = baseDate.plusMonths(periods);
+            int rDay = liability.getRepaymentDay() != null ? liability.getRepaymentDay() : 10;
+            liability.setNextRepaymentDate(shifted.withDayOfMonth(Math.min(rDay, shifted.lengthOfMonth())));
+        }
+        liabilityMapper.updateById(liability);
     }
 
     @Override
@@ -156,6 +256,7 @@ public class LiabilityServiceImpl implements LiabilityService {
         liability.setCurrentPeriod(liability.getTotalPeriods());
         liability.setStatus("SETTLED");
         liability.setSettledAt(LocalDateTime.now());
+        liability.setNextRepaymentDate(null);
         liabilityMapper.updateById(liability);
     }
 
@@ -172,52 +273,33 @@ public class LiabilityServiceImpl implements LiabilityService {
             return;
         }
 
-        // 计算当前周期起止时间
-        CycleTemplate template = cycleTemplateMapper.findDefault();
-        int startDay = (template != null && template.getStartDay() != null) ? template.getStartDay() : 1;
         LocalDate today = LocalDate.now();
-
-        int actualStartDay = Math.min(startDay, today.lengthOfMonth());
-        LocalDate cycleStartDate;
-        if (today.getDayOfMonth() >= actualStartDay) {
-            cycleStartDate = today.withDayOfMonth(actualStartDay);
-        } else {
-            LocalDate lastMonth = today.minusMonths(1);
-            cycleStartDate = lastMonth.withDayOfMonth(Math.min(startDay, lastMonth.lengthOfMonth()));
-        }
-        LocalDate nextMonth = cycleStartDate.plusMonths(1);
-        int nextMonthStartDay = Math.min(startDay, nextMonth.lengthOfMonth());
-        LocalDate cycleEndDate = nextMonth.withDayOfMonth(nextMonthStartDay).minusDays(1);
 
         for (Liability l : activeLiabilities) {
             if (l.getCurrentPeriod() >= l.getTotalPeriods()) {
                 l.setStatus("SETTLED");
+                l.setSettledAt(LocalDateTime.now());
+                l.setNextRepaymentDate(null);
                 liabilityMapper.updateById(l);
                 continue;
             }
 
-            int rDay = l.getRepaymentDay() != null ? l.getRepaymentDay() : 10;
-            // 定位当期还款日
-            LocalDate repaymentDate;
-            if (rDay >= cycleStartDate.getDayOfMonth()) {
-                repaymentDate = cycleStartDate.withDayOfMonth(Math.min(rDay, cycleStartDate.lengthOfMonth()));
-            } else {
-                repaymentDate = cycleEndDate.withDayOfMonth(Math.min(rDay, cycleEndDate.lengthOfMonth()));
+            LocalDate nextDue = l.getNextRepaymentDate();
+            if (nextDue == null) {
+                // 自动补齐 nextRepaymentDate
+                int rDay = l.getRepaymentDay() != null ? l.getRepaymentDay() : 10;
+                int actualDay = Math.min(rDay, today.lengthOfMonth());
+                nextDue = today.withDayOfMonth(actualDay);
+                if (nextDue.isBefore(today)) {
+                    LocalDate nextM = today.plusMonths(1);
+                    nextDue = nextM.withDayOfMonth(Math.min(rDay, nextM.lengthOfMonth()));
+                }
+                l.setNextRepaymentDate(nextDue);
+                liabilityMapper.updateById(l);
             }
 
-            // 若尚未到还款日，跳过
-            if (today.isBefore(repaymentDate)) {
-                continue;
-            }
-
-            // 检查当期是否已为此负债生成流水
-            QueryWrapper<Transaction> txQuery = new QueryWrapper<>();
-            txQuery.eq("liability_id", l.getId())
-                    .ge("transaction_date", cycleStartDate)
-                    .le("transaction_date", cycleEndDate);
-            Long count = transactionMapper.selectCount(txQuery);
-            if (count != null && count > 0) {
-                // 当期已扣款，无需重复扣
+            // 排期守护：若尚未到下一次还款日，坚决跳过，杜绝提前误扣与重复扣款
+            if (today.isBefore(nextDue)) {
                 continue;
             }
 
@@ -225,7 +307,6 @@ public class LiabilityServiceImpl implements LiabilityService {
             Long targetAccountId = l.getDefaultAccountId();
             Account defAcc = targetAccountId != null ? accountMapper.selectById(targetAccountId) : null;
             if (defAcc == null || defAcc.getCurrentBalance().compareTo(l.getPeriodAmount()) < 0) {
-                // 查找全系统余额最高的账户
                 Account bestAcc = accountMapper.selectOne(new QueryWrapper<Account>().orderByDesc("current_balance").last("LIMIT 1"));
                 if (bestAcc != null) {
                     targetAccountId = bestAcc.getId();
@@ -240,7 +321,7 @@ public class LiabilityServiceImpl implements LiabilityService {
             Transaction tx = new Transaction();
             tx.setType(2); // 支出
             tx.setAmount(l.getPeriodAmount());
-            tx.setTransactionDate(repaymentDate.isAfter(today) ? today : repaymentDate);
+            tx.setTransactionDate(today);
             tx.setAccountId(targetAccountId);
             tx.setCategoryId(l.getCategoryId());
             tx.setLiabilityId(l.getId());
@@ -252,6 +333,11 @@ public class LiabilityServiceImpl implements LiabilityService {
             if (nextPeriod >= l.getTotalPeriods()) {
                 l.setStatus("SETTLED");
                 l.setSettledAt(LocalDateTime.now());
+                l.setNextRepaymentDate(null);
+            } else {
+                int rDay = l.getRepaymentDay() != null ? l.getRepaymentDay() : 10;
+                LocalDate shifted = nextDue.plusMonths(1);
+                l.setNextRepaymentDate(shifted.withDayOfMonth(Math.min(rDay, shifted.lengthOfMonth())));
             }
             liabilityMapper.updateById(l);
         }

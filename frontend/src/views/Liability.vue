@@ -60,6 +60,12 @@
         <template v-else-if="column.key === 'periodAmount'">
           ¥{{ record.periodAmount }}
         </template>
+        <template v-else-if="column.key === 'nextRepaymentDate'">
+          <span v-if="record.status === 'SETTLED'" style="color: #999;">-</span>
+          <span v-else style="color: #722ed1; font-weight: 500;">
+            {{ record.nextRepaymentDate || '待排期' }}
+          </span>
+        </template>
         <template v-else-if="column.key === 'repaymentDay'">
           每月 {{ record.repaymentDay }} 日
         </template>
@@ -72,8 +78,8 @@
         <template v-else-if="column.key === 'action'">
           <a-space>
             <template v-if="record.status !== 'SETTLED'">
-              <a-button type="primary" size="small" @click="showSettleModal(record)">
-                提前结清
+              <a-button type="primary" size="small" @click="showRepayModal(record)">
+                还款
               </a-button>
               <a @click="editLiability(record)">编辑</a>
             </template>
@@ -127,34 +133,68 @@
             </a-select-option>
           </a-select>
         </a-form-item>
+        <a-form-item label="已还期数" help="中途补录已发生的分期可在此填写已还期数(默认为0)，系统不生成历史扣款流水">
+          <a-input-number v-model:value="form.currentPeriod" :min="0" :max="form.totalPeriods" :precision="0" style="width: 100%" />
+        </a-form-item>
+        <a-form-item label="下期还款日" required help="到达该日期系统将自动扣款，提前还款后此日期自动顺延">
+          <a-date-picker v-model:value="form.nextRepaymentDate" valueFormat="YYYY-MM-DD" style="width: 100%" />
+        </a-form-item>
         <a-form-item label="首期起算日期" required>
           <a-date-picker v-model:value="form.startDate" valueFormat="YYYY-MM-DD" style="width: 100%" />
         </a-form-item>
       </a-form>
     </a-modal>
 
-    <!-- 提前结清弹窗 -->
-    <a-modal v-model:open="settleVisible" title="提前结清分期" @ok="handleSettleOk">
-      <div v-if="settleRecord" style="margin-bottom: 16px;">
+    <!-- 分期还款弹窗 (双模式: 提前还期 vs 提前结清) -->
+    <a-modal v-model:open="repayVisible" title="分期还款" @ok="handleRepayModalOk">
+      <div v-if="repayRecord" style="margin-bottom: 16px;">
         <div style="font-size: 14px; margin-bottom: 8px;">
-          分期项目：<b>{{ settleRecord.name }}</b>
+          分期项目：<b>{{ repayRecord.name }}</b>
         </div>
         <div style="font-size: 13px; color: #666; margin-bottom: 4px;">
-          总期数：{{ settleRecord.totalPeriods }} 期 | 已还：{{ settleRecord.currentPeriod }} 期 | <b>待还剩余：{{ settleRecord.remainingPeriods }} 期</b>
+          总期数：{{ repayRecord.totalPeriods }} 期 | 已还：{{ repayRecord.currentPeriod }} 期 | <b>待还剩余：{{ repayRecord.remainingPeriods }} 期</b>
+        </div>
+        <div style="font-size: 13px; color: #722ed1;">
+          下一次计划还款日：<b>{{ repayRecord.nextRepaymentDate || '待排期' }}</b>
         </div>
       </div>
-      <a-form :label-col="{ span: 6 }" :wrapper-col="{ span: 16 }">
-        <a-form-item label="结清金额" required help="预填剩余待还总额，支持修改（若银行免除剩余手续费）">
-          <a-input-number v-model:value="settleAmount" :min="0.01" :precision="2" style="width: 100%" />
-        </a-form-item>
-        <a-form-item label="扣款账户" required>
-          <a-select v-model:value="settleAccountId" placeholder="请选择扣款账户">
-            <a-select-option v-for="acc in accounts" :key="acc.id" :value="acc.id">
-              {{ acc.name }} (余额: ¥{{ acc.currentBalance }})
-            </a-select-option>
-          </a-select>
-        </a-form-item>
-      </a-form>
+
+      <a-tabs v-model:activeKey="repayTabKey">
+        <a-tab-pane key="period" tab="提前还期">
+          <a-form :label-col="{ span: 6 }" :wrapper-col="{ span: 16 }">
+            <a-form-item label="归还期数" required>
+              <a-input-number v-model:value="repayPeriodsCount" :min="1" :max="repayRecord?.remainingPeriods || 1" :precision="0" addonAfter="期" style="width: 100%" @change="onRepayPeriodsChange" />
+            </a-form-item>
+            <a-form-item label="还款金额" required help="系统已自动按期数推算应还金额，支持手动微调">
+              <a-input-number v-model:value="repayAmount" :min="0.01" :precision="2" style="width: 100%" />
+            </a-form-item>
+            <a-form-item label="扣款账户" required>
+              <a-select v-model:value="repayAccountId" placeholder="请选择扣款账户">
+                <a-select-option v-for="acc in accounts" :key="acc.id" :value="acc.id">
+                  {{ acc.name }} (余额: ¥{{ acc.currentBalance }})
+                </a-select-option>
+              </a-select>
+            </a-form-item>
+            <a-alert type="info" show-icon message="防重说明" :description="`提前还款后，下一次应还日期将自动顺延 ${repayPeriodsCount} 个月，本周期到达还款日时系统绝不重复扣款。`" style="margin-top: 12px;" />
+          </a-form>
+        </a-tab-pane>
+
+        <a-tab-pane key="settle" tab="提前结清">
+          <a-form :label-col="{ span: 6 }" :wrapper-col="{ span: 16 }">
+            <a-form-item label="结清金额" required help="预填剩余待还总额，支持修改（若金融机构免除剩余手续费）">
+              <a-input-number v-model:value="settleAmount" :min="0.01" :precision="2" style="width: 100%" />
+            </a-form-item>
+            <a-form-item label="扣款账户" required>
+              <a-select v-model:value="settleAccountId" placeholder="请选择扣款账户">
+                <a-select-option v-for="acc in accounts" :key="acc.id" :value="acc.id">
+                  {{ acc.name }} (余额: ¥{{ acc.currentBalance }})
+                </a-select-option>
+              </a-select>
+            </a-form-item>
+            <a-alert type="warning" show-icon message="结清提示" description="提前结清将一次性偿还剩余所有期数，该分期将立即变更为【已结清】状态，后续不再生成周期扣款。" style="margin-top: 12px;" />
+          </a-form>
+        </a-tab-pane>
+      </a-tabs>
     </a-modal>
   </div>
 </template>
@@ -175,6 +215,7 @@ const columns = [
   { title: '剩余待还', key: 'remainingAmount' },
   { title: '还款进度', key: 'progress', width: 220 },
   { title: '每期应还', key: 'periodAmount' },
+  { title: '下期还款日', key: 'nextRepaymentDate', width: 120 },
   { title: '还款日', key: 'repaymentDay' },
   { title: '默认账户', key: 'defaultAccount' },
   { title: '记账分类', key: 'category' },
@@ -200,6 +241,29 @@ const monthlyDueTotal = computed(() => {
     .toFixed(2);
 });
 
+// 计算下一次还款日默认值
+const calculateDefaultNextRepaymentDate = (rDay: number) => {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = today.getMonth(); // 0-indexed
+  const day = today.getDate();
+
+  let targetYear = year;
+  let targetMonth = month;
+  if (day >= rDay) {
+    targetMonth += 1;
+    if (targetMonth > 11) {
+      targetMonth = 0;
+      targetYear += 1;
+    }
+  }
+  const maxDays = new Date(targetYear, targetMonth + 1, 0).getDate();
+  const actualDay = Math.min(rDay, maxDays);
+  const mStr = String(targetMonth + 1).padStart(2, '0');
+  const dStr = String(actualDay).padStart(2, '0');
+  return `${targetYear}-${mStr}-${dStr}`;
+};
+
 // 弹窗与表单
 const modalVisible = ref(false);
 const editingId = ref<number | null>(null);
@@ -208,18 +272,28 @@ const form = ref({
   principal: 0,
   totalAmount: 0,
   totalPeriods: 12,
+  currentPeriod: 0,
   rateType: 'NONE',
   interestRate: 0,
   periodAmount: 0,
   repaymentDay: 10,
+  nextRepaymentDate: '',
   defaultAccountId: null as number | null,
   categoryId: null as number | null,
   startDate: new Date().toISOString().split('T')[0]
 });
 
+// 分期还款 (双模式)
+const repayVisible = ref(false);
+const repayRecord = ref<any>(null);
+const repayTabKey = ref('period');
+
+// 提前还期
+const repayPeriodsCount = ref(1);
+const repayAmount = ref<number>(0);
+const repayAccountId = ref<number | null>(null);
+
 // 提前结清
-const settleVisible = ref(false);
-const settleRecord = ref<any>(null);
 const settleAmount = ref<number>(0);
 const settleAccountId = ref<number | null>(null);
 
@@ -266,15 +340,18 @@ const recalculateAmount = () => {
 
 const showAddModal = () => {
   editingId.value = null;
+  const defaultRDay = 10;
   form.value = {
     name: '',
     principal: 0,
     totalAmount: 0,
     totalPeriods: 12,
+    currentPeriod: 0,
     rateType: 'NONE',
     interestRate: 0,
     periodAmount: 0,
-    repaymentDay: 10,
+    repaymentDay: defaultRDay,
+    nextRepaymentDate: calculateDefaultNextRepaymentDate(defaultRDay),
     defaultAccountId: accounts.value.length > 0 ? accounts.value[0].id : null,
     categoryId: expenseCategories.value.find(c => c.name === '分期还款')?.id || (expenseCategories.value.length > 0 ? expenseCategories.value[0].id : null),
     startDate: new Date().toISOString().split('T')[0]
@@ -289,10 +366,12 @@ const editLiability = (record: any) => {
     principal: record.principal,
     totalAmount: record.totalAmount,
     totalPeriods: record.totalPeriods,
+    currentPeriod: record.currentPeriod || 0,
     rateType: record.rateType || 'NONE',
     interestRate: record.interestRate || 0,
     periodAmount: record.periodAmount,
     repaymentDay: record.repaymentDay || 10,
+    nextRepaymentDate: record.nextRepaymentDate || calculateDefaultNextRepaymentDate(record.repaymentDay || 10),
     defaultAccountId: record.defaultAccountId,
     categoryId: record.categoryId,
     startDate: record.startDate
@@ -328,27 +407,56 @@ const deleteLiability = async (id: number) => {
   } catch (e) {}
 };
 
-const showSettleModal = (record: any) => {
-  settleRecord.value = record;
+const showRepayModal = (record: any) => {
+  repayRecord.value = record;
+  repayTabKey.value = 'period';
+  repayPeriodsCount.value = 1;
+  repayAmount.value = record.periodAmount || 0;
+  repayAccountId.value = record.defaultAccountId || (accounts.value.length > 0 ? accounts.value[0].id : null);
+
   settleAmount.value = record.remainingAmount || 0;
   settleAccountId.value = record.defaultAccountId || (accounts.value.length > 0 ? accounts.value[0].id : null);
-  settleVisible.value = true;
+
+  repayVisible.value = true;
 };
 
-const handleSettleOk = async () => {
-  if (!settleAccountId.value || !settleAmount.value || settleAmount.value <= 0) {
-    message.error('请指定扣款账户和结清金额');
-    return;
+const onRepayPeriodsChange = () => {
+  const pCount = repayPeriodsCount.value || 1;
+  const pAmount = repayRecord.value?.periodAmount || 0;
+  repayAmount.value = Math.round(pCount * pAmount * 100) / 100;
+};
+
+const handleRepayModalOk = async () => {
+  if (repayTabKey.value === 'period') {
+    if (!repayAccountId.value || !repayAmount.value || repayAmount.value <= 0) {
+      message.error('请指定扣款账户和还款金额');
+      return;
+    }
+    try {
+      await request.post(`/liabilities/${repayRecord.value.id}/repay`, {
+        accountId: repayAccountId.value,
+        periods: repayPeriodsCount.value,
+        amount: repayAmount.value
+      });
+      message.success(`提前归还 ${repayPeriodsCount.value} 期成功！已顺延下期还款日`);
+      repayVisible.value = false;
+      fetchData();
+    } catch (e) {}
+  } else {
+    if (!settleAccountId.value || !settleAmount.value || settleAmount.value <= 0) {
+      message.error('请指定扣款账户和结清金额');
+      return;
+    }
+    try {
+      await request.post(`/liabilities/${repayRecord.value.id}/settle`, {
+        accountId: settleAccountId.value,
+        settleAmount: settleAmount.value
+      });
+      message.success('分期提前结清成功！');
+      repayVisible.value = false;
+      fetchData();
+    } catch (e) {}
   }
-  try {
-    await request.post(`/liabilities/${settleRecord.value.id}/settle`, {
-      accountId: settleAccountId.value,
-      settleAmount: settleAmount.value
-    });
-    message.success('分期提前结清成功！');
-    settleVisible.value = false;
-    fetchData();
-  } catch (e) {}
 };
 
 onMounted(() => {

@@ -7,6 +7,8 @@ import java.time.LocalDateTime;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.FieldStrategy;
 
 @TableName("liability")
 public class Liability {
@@ -21,6 +23,9 @@ public class Liability {
     private String rateType; // NONE, FEE, APR
     private BigDecimal interestRate;
     private Integer repaymentDay;
+
+    @TableField(value = "next_repayment_date", updateStrategy = FieldStrategy.ALWAYS)
+    private LocalDate nextRepaymentDate;
     private Long defaultAccountId;
     private Long categoryId;
     private Integer autoCycleFixedExpense;
@@ -50,6 +55,8 @@ public class Liability {
     public void setInterestRate(BigDecimal interestRate) { this.interestRate = interestRate; }
     public Integer getRepaymentDay() { return repaymentDay; }
     public void setRepaymentDay(Integer repaymentDay) { this.repaymentDay = repaymentDay; }
+    public LocalDate getNextRepaymentDate() { return nextRepaymentDate; }
+    public void setNextRepaymentDate(LocalDate nextRepaymentDate) { this.nextRepaymentDate = nextRepaymentDate; }
     public Long getDefaultAccountId() { return defaultAccountId; }
     public void setDefaultAccountId(Long defaultAccountId) { this.defaultAccountId = defaultAccountId; }
     public Long getCategoryId() { return categoryId; }

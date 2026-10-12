@@ -40,6 +40,21 @@ public class LiabilityController {
         return Result.success();
     }
 
+    @PostMapping("/{id}/repay")
+    public Result<Void> repayPeriods(@PathVariable Long id, @RequestBody Map<String, Object> payload) {
+        Object accObj = payload.get("accountId");
+        Object amtObj = payload.get("amount");
+        Object perObj = payload.get("periods");
+        if (accObj == null || amtObj == null) {
+            return Result.error(400, "必须指定扣款账户和还款金额");
+        }
+        Long accountId = Long.valueOf(accObj.toString());
+        BigDecimal amount = new BigDecimal(amtObj.toString());
+        Integer periods = (perObj != null) ? Integer.valueOf(perObj.toString()) : 1;
+        liabilityService.repayPeriods(id, periods, amount, accountId);
+        return Result.success();
+    }
+
     @PostMapping("/{id}/settle")
     public Result<Void> settleLiability(@PathVariable Long id, @RequestBody Map<String, Object> payload) {
         Object accObj = payload.get("accountId");

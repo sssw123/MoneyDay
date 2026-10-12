@@ -10,6 +10,7 @@ public interface LiabilityService {
     Liability addLiability(Liability liability);
     Liability updateLiability(Liability liability);
     void deleteLiability(Long id);
+    void repayPeriods(Long id, Integer periods, BigDecimal amount, Long accountId);
     void settleLiability(Long id, Long accountId, BigDecimal settleAmount);
     void checkAndExecuteDueRepayments();
 }
