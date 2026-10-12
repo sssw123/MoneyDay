@@ -33,6 +33,7 @@ public class CycleRecordServiceImpl implements CycleRecordService {
     @Autowired private StatMapper statMapper;
     @Autowired private TransactionMapper transactionMapper;
     @Autowired private AccountMapper accountMapper;
+    @Autowired @org.springframework.context.annotation.Lazy private com.moneyday.backend.service.LiabilityService liabilityService;
 
     @Override
     public CycleRecord getOrCreateSnapshot(LocalDate cycleStartDate, LocalDate cycleEndDate) {
@@ -169,6 +170,12 @@ public class CycleRecordServiceImpl implements CycleRecordService {
 
     @Override
     public List<Map<String, Object>> getRecentCycles(int months) {
+        try {
+            if (liabilityService != null) {
+                liabilityService.checkAndExecuteDueRepayments();
+            }
+        } catch (Exception ignored) {}
+
         List<Map<String, Object>> list = new ArrayList<>();
 
         CycleTemplate template = cycleTemplateMapper.findDefault();

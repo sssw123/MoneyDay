@@ -24,14 +24,32 @@ const router = createRouter({
       component: () => import('../views/CategoryList.vue')
     },
     {
+      path: '/budget',
+      name: 'Budget',
+      component: () => import('../views/Budget.vue')
+    },
+    {
       path: '/budgets',
-      name: 'BudgetAndTarget',
-      component: () => import('../views/BudgetAndTarget.vue')
+      redirect: '/budget'
+    },
+    {
+      path: '/plan/targets',
+      name: 'TargetPlan',
+      component: () => import('../views/TargetPlan.vue')
+    },
+    {
+      path: '/plan/wishlist',
+      name: 'Wishlist',
+      component: () => import('../views/Wishlist.vue')
     },
     {
       path: '/wishlist',
-      name: 'Wishlist',
-      component: () => import('../views/Wishlist.vue')
+      redirect: '/plan/wishlist'
+    },
+    {
+      path: '/plan/liabilities',
+      name: 'Liability',
+      component: () => import('../views/Liability.vue')
     },
     {
       path: '/settings',

@@ -19,8 +19,12 @@ public class Transaction {
     private Long accountId;
     private Long toAccountId;
     private String remark;
+    private Long liabilityId;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    public Long getLiabilityId() { return liabilityId; }
+    public void setLiabilityId(Long liabilityId) { this.liabilityId = liabilityId; }
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }

@@ -54,6 +54,9 @@ public class TargetServiceImpl implements TargetService {
     @Autowired
     private AccountMapper accountMapper;
 
+    @Autowired
+    private com.moneyday.backend.mapper.LiabilityMapper liabilityMapper;
+
     @Override
     public List<TargetVO> getAllTargets() {
         List<Target> targets = targetMapper.selectList(null);
@@ -67,12 +70,16 @@ public class TargetServiceImpl implements TargetService {
             cumulativeBalance = BigDecimal.ZERO;
         }
 
-        // 2. 获取总资产（当前阶段长期目标的可用净资产即为全部账户总资产，心愿单不扣减预留）
+        // 2. 获取可用净资产（总资产 - 未结清负债待还总额）
         BigDecimal totalAssets = statMapper.getTotalAssets();
         if (totalAssets == null) {
             totalAssets = BigDecimal.ZERO;
         }
-        BigDecimal availableNetAssets = totalAssets;
+        BigDecimal totalLiab = liabilityMapper.getTotalRemainingLiability();
+        if (totalLiab == null) {
+            totalLiab = BigDecimal.ZERO;
+        }
+        BigDecimal availableNetAssets = totalAssets.subtract(totalLiab);
 
         // 3. 计算历史已结算周期的平均实际结余
         LocalDate today = LocalDate.now();
@@ -141,12 +148,8 @@ public class TargetServiceImpl implements TargetService {
         for (Target t : targets) {
             TargetVO vo = new TargetVO();
             BeanUtils.copyProperties(t, vo);
-            if (vo.getType() == null || vo.getType().trim().isEmpty() || "SHORT_TERM".equalsIgnoreCase(vo.getType())) {
-                vo.setType("WISHLIST");
-            }
-
-            boolean isLongTerm = "LONG_TERM".equalsIgnoreCase(vo.getType());
-            BigDecimal availableFunds = isLongTerm ? availableNetAssets : cumulativeBalance;
+            vo.setType("LONG_TERM");
+            BigDecimal availableFunds = availableNetAssets;
             vo.setAvailableFunds(availableFunds);
 
             BigDecimal targetAmount = vo.getTargetAmount() != null ? vo.getTargetAmount() : BigDecimal.ZERO;
@@ -180,53 +183,35 @@ public class TargetServiceImpl implements TargetService {
             if (gap.compareTo(BigDecimal.ZERO) <= 0) {
                 vo.setEstimatedCompletionDate("当前可实现");
                 vo.setIsEstimatedFallback(false);
-                vo.setEstimatedReason(isLongTerm ? "当前总资产已满足目标金额" : "当前累计结余已达到心愿金额");
+                vo.setEstimatedReason("当前可用净资产已满足目标金额");
                 vo.setGap(BigDecimal.ZERO);
                 voList.add(vo);
                 continue;
             }
             vo.setGap(gap);
 
-            // 计算存钱速度与推算模式
+            // 计算存钱速度与推算模式 (长期资产目标以每周期净沉淀为准)
             BigDecimal velocity = BigDecimal.ZERO;
             boolean isFallback = false;
             String reason = "";
 
-            if (!isLongTerm) {
-                // 心愿单 (由日常累计结余池驱动)
-                if (avgHistoricalBalance != null && avgHistoricalBalance.compareTo(BigDecimal.ZERO) > 0) {
-                    velocity = avgHistoricalBalance;
+            if (avgHistoricalBalance != null && avgHistoricalBalance.compareTo(BigDecimal.ZERO) > 0) {
+                BigDecimal netAccumulation = templateFixedDeposit.add(avgHistoricalBalance);
+                if (netAccumulation.compareTo(BigDecimal.ZERO) > 0) {
+                    velocity = netAccumulation;
                     isFallback = false;
-                    reason = "基于历史平均实际结余推算 (¥" + avgHistoricalBalance.setScale(2, RoundingMode.HALF_UP) + "/周期)";
-                } else if (templateBaselineBalance.compareTo(BigDecimal.ZERO) > 0) {
-                    velocity = templateBaselineBalance;
-                    isFallback = true;
-                    reason = "历史结余为负，此为按模板预算严格执行的预计时间 (基准结余 ¥" + templateBaselineBalance.setScale(2, RoundingMode.HALF_UP) + "/周期)";
+                    reason = "基于每周期净沉淀推算 (固存¥" + templateFixedDeposit + " + 历史平均结余¥" + avgHistoricalBalance.setScale(2, RoundingMode.HALF_UP) + " = ¥" + netAccumulation.setScale(2, RoundingMode.HALF_UP) + "/周期)";
                 } else {
                     velocity = BigDecimal.ZERO;
-                    isFallback = false;
-                    reason = "历史平均结余与模板计划预算均无盈余，无法预估";
                 }
+            } else if (templateBaselineNetAccumulation.compareTo(BigDecimal.ZERO) > 0) {
+                velocity = templateBaselineNetAccumulation;
+                isFallback = true;
+                reason = "历史结余为负，此为按模板严格执行的基准净沉淀预计时间 (固收-固支 = ¥" + templateBaselineNetAccumulation.setScale(2, RoundingMode.HALF_UP) + "/周期)";
             } else {
-                // 长期资产目标
-                if (avgHistoricalBalance != null && avgHistoricalBalance.compareTo(BigDecimal.ZERO) > 0) {
-                    BigDecimal netAccumulation = templateFixedDeposit.add(avgHistoricalBalance);
-                    if (netAccumulation.compareTo(BigDecimal.ZERO) > 0) {
-                        velocity = netAccumulation;
-                        isFallback = false;
-                        reason = "基于每周期净沉淀推算 (固存¥" + templateFixedDeposit + " + 历史平均结余¥" + avgHistoricalBalance.setScale(2, RoundingMode.HALF_UP) + " = ¥" + netAccumulation.setScale(2, RoundingMode.HALF_UP) + "/周期)";
-                    } else {
-                        velocity = BigDecimal.ZERO;
-                    }
-                } else if (templateBaselineNetAccumulation.compareTo(BigDecimal.ZERO) > 0) {
-                    velocity = templateBaselineNetAccumulation;
-                    isFallback = true;
-                    reason = "历史结余为负，此为按模板严格执行的基准净沉淀预计时间 (固收-固支 = ¥" + templateBaselineNetAccumulation.setScale(2, RoundingMode.HALF_UP) + "/周期)";
-                } else {
-                    velocity = BigDecimal.ZERO;
-                    isFallback = false;
-                    reason = "历史结余与模板基准净沉淀均无盈余，无法预估";
-                }
+                velocity = BigDecimal.ZERO;
+                isFallback = false;
+                reason = "历史结余与模板基准净沉淀均无盈余，无法预估";
             }
 
             if (velocity.compareTo(BigDecimal.ZERO) <= 0) {
@@ -256,18 +241,14 @@ public class TargetServiceImpl implements TargetService {
         if (target.getStartDate() == null) {
             target.setStartDate(LocalDate.now());
         }
-        if (target.getType() == null || target.getType().trim().isEmpty() || "SHORT_TERM".equalsIgnoreCase(target.getType())) {
-            target.setType("WISHLIST");
-        }
+        target.setType("LONG_TERM");
         targetMapper.insert(target);
         return target;
     }
 
     @Override
     public Target updateTarget(Target target) {
-        if (target.getType() == null || target.getType().trim().isEmpty() || "SHORT_TERM".equalsIgnoreCase(target.getType())) {
-            target.setType("WISHLIST");
-        }
+        target.setType("LONG_TERM");
         targetMapper.updateById(target);
         return target;
     }

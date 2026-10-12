@@ -142,7 +142,6 @@ const editingId = ref<number | null>(null);
 const form = ref({
   name: '',
   targetAmount: 0,
-  type: 'WISHLIST',
   startDate: new Date().toISOString().split('T')[0],
   deadline: ''
 });
@@ -152,10 +151,10 @@ const realizeRecord = ref<any>(null);
 const realizeAccountId = ref<number | null>(null);
 
 const fetchData = async () => {
-  const allTargets: any[] = await request.get('/targets');
-  wishlists.value = allTargets.filter(t => t.type !== 'LONG_TERM');
+  wishlists.value = await request.get('/wishlists');
   accounts.value = await request.get('/accounts');
-  cumulativeBalance.value = await request.get('/targets/cumulative-balance');
+  const stats: any = await request.get('/stats');
+  cumulativeBalance.value = stats.cumulativeBalance || 0;
 };
 
 const showAddModal = () => {
@@ -163,7 +162,6 @@ const showAddModal = () => {
   form.value = {
     name: '',
     targetAmount: 0,
-    type: 'WISHLIST',
     startDate: new Date().toISOString().split('T')[0],
     deadline: ''
   };
@@ -175,7 +173,6 @@ const editWishlist = (record: any) => {
   form.value = {
     name: record.name,
     targetAmount: record.targetAmount,
-    type: 'WISHLIST',
     startDate: record.startDate,
     deadline: record.deadline || ''
   };
@@ -185,9 +182,9 @@ const editWishlist = (record: any) => {
 const handleOk = async () => {
   try {
     if (editingId.value) {
-      await request.put(`/targets/${editingId.value}`, form.value);
+      await request.put(`/wishlists/${editingId.value}`, form.value);
     } else {
-      await request.post('/targets', form.value);
+      await request.post('/wishlists', form.value);
     }
     message.success('保存成功');
     modalVisible.value = false;
@@ -197,7 +194,7 @@ const handleOk = async () => {
 
 const deleteWishlist = async (id: number) => {
   try {
-    await request.delete(`/targets/${id}`);
+    await request.delete(`/wishlists/${id}`);
     message.success('删除成功');
     fetchData();
   } catch (e) {}
@@ -215,8 +212,8 @@ const handleRealizeOk = async () => {
     return;
   }
   try {
-    await request.post(`/targets/${realizeRecord.value.id}/realize`, { accountId: realizeAccountId.value });
-    message.success('心愿实现成功！账户已扣款');
+    await request.post(`/wishlists/${realizeRecord.value.id}/realize`, { accountId: realizeAccountId.value });
+    message.success('心愿兑现成功！账户已扣款');
     realizeVisible.value = false;
     fetchData();
   } catch (e) {}
@@ -224,7 +221,7 @@ const handleRealizeOk = async () => {
 
 const handleUnrealize = async (record: any) => {
   try {
-    await request.post(`/targets/${record.id}/unrealize`);
+    await request.post(`/wishlists/${record.id}/unrealize`);
     message.success('已成功撤销心愿，资金已退回账户！');
     fetchData();
   } catch (e) {}

@@ -1,12 +1,30 @@
 <template>
   <div style="padding: 24px;">
-    <!-- 第一行：全局资产与收支概览 -->
+    <!-- 第一行：全局资产负债与收支概览 (四重资产视角) -->
     <a-row :gutter="16" style="margin-bottom: 24px;">
       <a-col :span="6">
-        <a-card title="总资产 (可用净资产)">
+        <a-card title="总资产 (存款资金和)">
           <h2 style="margin-bottom: 4px;">¥{{ stats.totalAssets }}</h2>
           <div style="font-size: 13px; color: #666;">
-            长期资产目标托底池
+            所有账户活期/储蓄余额和
+          </div>
+        </a-card>
+      </a-col>
+      <a-col :span="6">
+        <a-card title="未还总负债 (分期待还)">
+          <h2 style="color: #ff4d4f; margin-bottom: 4px;">¥{{ stats.totalLiabilities || 0 }}</h2>
+          <div style="font-size: 13px; color: #666;">
+            锁定未来周期的刚性流出
+          </div>
+        </a-card>
+      </a-col>
+      <a-col :span="6">
+        <a-card title="可用净资产 (总资产 - 负债)">
+          <h2 :style="{ color: stats.availableAssets >= 0 ? '#722ed1' : '#ff4d4f', marginBottom: '4px' }">
+            ¥{{ stats.availableAssets }}
+          </h2>
+          <div style="font-size: 13px; color: #666;">
+            长期资产目标的真实托底池
           </div>
         </a-card>
       </a-col>
@@ -18,18 +36,6 @@
           <div style="font-size: 13px; color: #666;">
             心愿单达成标尺池 (随时任性兑现)
           </div>
-        </a-card>
-      </a-col>
-      <a-col :span="6">
-        <a-card title="本周期收入">
-          <h2 style="color: #52c41a; margin-bottom: 4px;">+¥{{ stats.currentIncome }}</h2>
-          <div style="font-size: 13px; color: #999;">真实入账流水</div>
-        </a-card>
-      </a-col>
-      <a-col :span="6">
-        <a-card title="本周期支出">
-          <h2 style="color: #ff4d4f; margin-bottom: 4px;">-¥{{ stats.currentExpense }}</h2>
-          <div style="font-size: 13px; color: #999;">真实开销流水</div>
         </a-card>
       </a-col>
     </a-row>
@@ -56,7 +62,7 @@
               {{ stats.currentBalance >= 0 ? '+¥' + stats.currentBalance : '-¥' + Math.abs(stats.currentBalance) }}
             </h1>
             <div :style="{ color: stats.currentBalance >= 0 ? '#52c41a' : '#ff4d4f', fontSize: '12px', marginTop: '4px' }">
-              {{ stats.currentBalance >= 0 ? '日常消费有结余 (推进目标)' : '警告：日常开销超支！' }}
+              {{ stats.currentBalance >= 0 ? '日常消费有结余 (推进心愿)' : '警告：日常开销超支！' }}
             </div>
           </div>
         </a-col>
@@ -72,7 +78,7 @@
               {{ stats.currentFinalBalance >= 0 ? '¥' + stats.currentFinalBalance : '-¥' + Math.abs(stats.currentFinalBalance) }}
             </h1>
             <div :style="{ color: stats.currentFinalBalance >= 0 ? '#52c41a' : '#ff4d4f', fontSize: '12px', marginTop: '4px' }">
-              固存 + 结余/超支 (本期最终留存)
+              固存 + 结余/超支 (推进长期资产目标)
             </div>
           </div>
         </a-col>
@@ -116,13 +122,14 @@
     <a-row :gutter="16" style="margin-top: 24px;">
       <a-col :span="12">
         <a-card title="长期资产目标快捷实现">
-          <a-table :dataSource="longTermTargets" :columns="longTermColumns" rowKey="id" :pagination="false" size="small">
+          <a-table :dataSource="targets" :columns="longTermColumns" rowKey="id" :pagination="false" size="small">
             <template #bodyCell="{ column, record }">
               <template v-if="column.key === 'targetAmount'">
                 ¥{{ record.targetAmount }}
               </template>
               <template v-else-if="column.key === 'progress'">
                 <a-progress :percent="record.progress || 0"
+                            :stroke-color="record.isRealized === 1 ? '#52c41a' : '#722ed1'"
                             :status="(record.progress || 0) >= 100 ? 'success' : 'active'" />
               </template>
               <template v-else-if="column.key === 'estimatedCompletionDate'">
@@ -147,17 +154,17 @@
               <template v-else-if="column.key === 'action'">
                 <a-space v-if="record.isRealized === 1">
                   <a-tag color="green">已实现</a-tag>
-                  <a-popconfirm title="确定撤销该目标的实现状态吗？扣款流水将被删除并退回账户余额" @confirm="handleUnrealize(record)">
+                  <a-popconfirm title="确定撤销该目标的实现状态吗？扣款流水将被删除并退回账户余额" @confirm="handleUnrealizeTarget(record)">
                     <a style="color: #ff4d4f; font-size: 12px;">撤销</a>
                   </a-popconfirm>
                 </a-space>
                 <template v-else>
-                  <a-tooltip :title="stats.totalAssets < record.targetAmount ? `当前总资产不足以实现此目标 (缺口: ¥${record.gap || 0})` : ''">
+                  <a-tooltip :title="stats.availableAssets < record.targetAmount ? `可用净资产不足以实现此目标 (缺口: ¥${record.gap || 0})` : ''">
                     <a-button
                       type="primary"
                       size="small"
-                      :disabled="stats.totalAssets < record.targetAmount"
-                      @click="showRealizeModal(record)">
+                      :disabled="stats.availableAssets < record.targetAmount"
+                      @click="showRealizeModal(record, 'TARGET')">
                       实现目标
                     </a-button>
                   </a-tooltip>
@@ -170,7 +177,7 @@
 
       <a-col :span="12">
         <a-card title="心愿单快捷兑现">
-          <a-table :dataSource="wishlistTargets" :columns="wishlistColumns" rowKey="id" :pagination="false" size="small">
+          <a-table :dataSource="wishlists" :columns="wishlistColumns" rowKey="id" :pagination="false" size="small">
             <template #bodyCell="{ column, record }">
               <template v-if="column.key === 'targetAmount'">
                 ¥{{ record.targetAmount }}
@@ -202,7 +209,7 @@
               <template v-else-if="column.key === 'action'">
                 <a-space v-if="record.isRealized === 1">
                   <a-tag color="green">已兑现</a-tag>
-                  <a-popconfirm title="确定撤销该心愿的兑现状态吗？扣款流水将被删除并退回账户余额" @confirm="handleUnrealize(record)">
+                  <a-popconfirm title="确定撤销该心愿的兑现状态吗？扣款流水将被删除并退回账户余额" @confirm="handleUnrealizeWishlist(record)">
                     <a style="color: #ff4d4f; font-size: 12px;">撤销</a>
                   </a-popconfirm>
                 </a-space>
@@ -212,7 +219,7 @@
                       type="primary"
                       size="small"
                       :style="stats.cumulativeBalance < record.targetAmount ? { background: '#eb2f96', borderColor: '#eb2f96' } : {}"
-                      @click="showRealizeModal(record)">
+                      @click="showRealizeModal(record, 'WISHLIST')">
                       兑现心愿
                     </a-button>
                   </a-tooltip>
@@ -225,17 +232,17 @@
     </a-row>
 
     <!-- 实现目标 / 心愿弹窗 -->
-    <a-modal v-model:open="realizeVisible" :title="realizeTargetRecord?.type === 'LONG_TERM' ? '实现长期目标（扣款设定）' : '兑现心愿（扣款设定）'" @ok="handleRealizeOk">
-      <div v-if="realizeTargetRecord?.type !== 'LONG_TERM' && stats.cumulativeBalance < (realizeTargetRecord?.targetAmount || 0)" style="margin-bottom: 16px;">
+    <a-modal v-model:open="realizeVisible" :title="realizeKind === 'TARGET' ? '实现长期目标（扣款设定）' : '兑现心愿（扣款设定）'" @ok="handleRealizeOk">
+      <div v-if="realizeKind === 'WISHLIST' && stats.cumulativeBalance < (realizeItem?.targetAmount || 0)" style="margin-bottom: 16px;">
         <a-alert
           type="warning"
           show-icon
           message="结余超支软警告"
-          :description="`当前全局累计结余为 ¥${stats.cumulativeBalance}，小于心愿金额 ¥${realizeTargetRecord?.targetAmount}。兑现此心愿将导致结余超支或动用老本储蓄。兑现心愿完全看心情，确定要任性实现吗？`"
+          :description="`当前全局累计结余为 ¥${stats.cumulativeBalance}，小于心愿金额 ¥${realizeItem?.targetAmount}。兑现此心愿将导致结余超支或动用老本储蓄。兑现心愿完全看心情，确定要任性实现吗？`"
         />
       </div>
       <a-form :label-col="{ span: 6 }" :wrapper-col="{ span: 16 }">
-        <a-form-item label="扣款账户" required :help="realizeTargetRecord?.type === 'LONG_TERM' ? '实现目标将生成一笔真实支出记录，分类自动绑定为【目标】' : '兑现心愿将生成一笔真实支出记录，分类自动绑定为【目标】'">
+        <a-form-item label="扣款账户" required :help="realizeKind === 'TARGET' ? '实现目标将生成一笔真实支出记录，分类自动绑定为【目标】' : '兑现心愿将生成一笔真实支出记录，分类自动绑定为【目标】'">
           <a-select v-model:value="realizeAccountId" placeholder="请选择扣款账户">
             <a-select-option v-for="acc in accounts" :key="acc.id" :value="acc.id">
               {{ acc.name }} (余额: ¥{{ acc.currentBalance }})
@@ -261,11 +268,9 @@ use([CanvasRenderer, PieChart, TitleComponent, TooltipComponent, LegendComponent
 
 const stats = ref({
   totalAssets: 0,
-  totalTargets: 0,
-  targetAllocated: 0,
-  cumulativeBalance: 0,
+  totalLiabilities: 0,
   availableAssets: 0,
-  isOverdraft: false,
+  cumulativeBalance: 0,
   currentIncome: 0,
   currentExpense: 0,
   currentFixedDeposit: 0,
@@ -276,6 +281,7 @@ const stats = ref({
 
 const cycles = ref<any[]>([]);
 const targets = ref<any[]>([]);
+const wishlists = ref<any[]>([]);
 const accounts = ref<any[]>([]);
 
 const cycleColumns = [
@@ -288,7 +294,7 @@ const cycleColumns = [
 const longTermColumns = [
   { title: '目标名称', dataIndex: 'name', key: 'name' },
   { title: '目标金额', key: 'targetAmount' },
-  { title: '总资产进度', key: 'progress' },
+  { title: '净资产进度', key: 'progress' },
   { title: '预计实现时间', key: 'estimatedCompletionDate' },
   { title: '操作', key: 'action' }
 ];
@@ -301,14 +307,6 @@ const wishlistColumns = [
   { title: '操作', key: 'action' }
 ];
 
-const longTermTargets = computed(() => {
-  return targets.value.filter(t => t.type === 'LONG_TERM');
-});
-
-const wishlistTargets = computed(() => {
-  return targets.value.filter(t => t.type !== 'LONG_TERM');
-});
-
 const getCycleDeposit = (record: any) => {
   if (!record.fixedItems) return 0;
   return record.fixedItems.reduce((acc: number, item: any) => {
@@ -316,15 +314,15 @@ const getCycleDeposit = (record: any) => {
   }, 0);
 };
 
-// 快捷实现目标 / 心愿
+// 快捷实现 / 兑现
 const realizeVisible = ref(false);
-const realizeTargetId = ref<number | null>(null);
-const realizeTargetRecord = ref<any>(null);
+const realizeKind = ref<'TARGET' | 'WISHLIST'>('TARGET');
+const realizeItem = ref<any>(null);
 const realizeAccountId = ref<number | null>(null);
 
-const showRealizeModal = (record: any) => {
-  realizeTargetRecord.value = record;
-  realizeTargetId.value = record.id;
+const showRealizeModal = (record: any, kind: 'TARGET' | 'WISHLIST') => {
+  realizeItem.value = record;
+  realizeKind.value = kind;
   realizeAccountId.value = accounts.value.length > 0 ? accounts.value[0].id : null;
   realizeVisible.value = true;
 };
@@ -335,19 +333,30 @@ const handleRealizeOk = async () => {
     return;
   }
   try {
-    await request.post(`/targets/${realizeTargetId.value}/realize`, { accountId: realizeAccountId.value });
-    const isLongTerm = realizeTargetRecord.value?.type === 'LONG_TERM';
-    message.success(isLongTerm ? '目标实现成功！账户已扣款' : '心愿兑现成功！账户已扣款');
+    if (realizeKind.value === 'TARGET') {
+      await request.post(`/targets/${realizeItem.value.id}/realize`, { accountId: realizeAccountId.value });
+      message.success('长期目标实现成功！账户已扣款');
+    } else {
+      await request.post(`/wishlists/${realizeItem.value.id}/realize`, { accountId: realizeAccountId.value });
+      message.success('心愿兑现成功！账户已扣款');
+    }
     realizeVisible.value = false;
     refreshData();
   } catch (e) {}
 };
 
-const handleUnrealize = async (record: any) => {
+const handleUnrealizeTarget = async (record: any) => {
   try {
     await request.post(`/targets/${record.id}/unrealize`);
-    const isLongTerm = record.type === 'LONG_TERM';
-    message.success(isLongTerm ? '已成功撤销目标实现状态，资金已退回账户！' : '已成功撤销心愿兑现状态，资金已退回账户！');
+    message.success('已成功撤销目标实现状态，资金已退回账户！');
+    refreshData();
+  } catch (e) {}
+};
+
+const handleUnrealizeWishlist = async (record: any) => {
+  try {
+    await request.post(`/wishlists/${record.id}/unrealize`);
+    message.success('已成功撤销心愿兑现状态，资金已退回账户！');
     refreshData();
   } catch (e) {}
 };
@@ -378,6 +387,7 @@ const refreshData = async () => {
   stats.value = await request.get('/stats');
   cycles.value = await request.get('/cycles');
   targets.value = await request.get('/targets');
+  wishlists.value = await request.get('/wishlists');
   accounts.value = await request.get('/accounts');
 };
 

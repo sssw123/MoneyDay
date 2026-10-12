@@ -17,8 +17,15 @@ public class StatDTO {
     private BigDecimal currentFinalBalance;
     private BigDecimal availableAssets;
     private BigDecimal cumulativeBalance;
+    private BigDecimal totalLiabilities;
 
     private List<Map<String, Object>> categoryExpenses;
+
+    public BigDecimal getCurrentFinalBalance() { return currentFinalBalance; }
+    public void setCurrentFinalBalance(BigDecimal currentFinalBalance) { this.currentFinalBalance = currentFinalBalance; }
+
+    public BigDecimal getTotalLiabilities() { return totalLiabilities; }
+    public void setTotalLiabilities(BigDecimal totalLiabilities) { this.totalLiabilities = totalLiabilities; }
 
     public BigDecimal getCumulativeBalance() { return cumulativeBalance; }
     public void setCumulativeBalance(BigDecimal cumulativeBalance) { this.cumulativeBalance = cumulativeBalance; }
@@ -39,8 +46,6 @@ public class StatDTO {
     public void setCurrentFixedDeposit(BigDecimal currentFixedDeposit) { this.currentFixedDeposit = currentFixedDeposit; }
     public BigDecimal getCurrentBalance() { return currentBalance; }
     public void setCurrentBalance(BigDecimal currentBalance) { this.currentBalance = currentBalance; }
-    public BigDecimal getCurrentFinalBalance() { return currentFinalBalance; }
-    public void setCurrentFinalBalance(BigDecimal currentFinalBalance) { this.currentFinalBalance = currentFinalBalance; }
     public BigDecimal getAvailableAssets() { return availableAssets; }
     public void setAvailableAssets(BigDecimal availableAssets) { this.availableAssets = availableAssets; }
     public List<Map<String, Object>> getCategoryExpenses() { return categoryExpenses; }

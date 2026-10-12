@@ -25,6 +25,9 @@ public class StatServiceImpl implements StatService {
     @Autowired
     private com.moneyday.backend.service.CycleRecordService cycleRecordService;
 
+    @Autowired
+    private com.moneyday.backend.mapper.LiabilityMapper liabilityMapper;
+
     public StatDTO getStats() {
         StatDTO dto = new StatDTO();
         dto.setTotalAssets(statMapper.getTotalAssets());
@@ -76,8 +79,10 @@ public class StatServiceImpl implements StatService {
         BigDecimal balance = dto.getCurrentIncome().subtract(fixedDeposit).subtract(dto.getCurrentExpense());
         dto.setCurrentBalance(balance);
         dto.setCurrentFinalBalance(fixedDeposit.add(balance));
-        // 可用净资产即为总资产（心愿单与目标不锁定预留资金）
-        dto.setAvailableAssets(dto.getTotalAssets());
+        BigDecimal totalLiab = liabilityMapper.getTotalRemainingLiability();
+        dto.setTotalLiabilities(totalLiab != null ? totalLiab : BigDecimal.ZERO);
+        // 可用净资产 = 总资产 - 所有未结清负债待还总额
+        dto.setAvailableAssets(dto.getTotalAssets().subtract(dto.getTotalLiabilities()));
         dto.setCumulativeBalance(cycleRecordService.getTotalCumulativeBalance());
         dto.setCategoryExpenses(statMapper.getCategoryExpensesByDate(sDate, eDate));
 

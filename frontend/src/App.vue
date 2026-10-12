@@ -6,7 +6,7 @@
       :style="{ overflow: 'auto', height: '100vh', position: 'fixed', left: 0, top: 0, bottom: 0, zIndex: 100 }"
     >
       <div class="logo">MoneyDay</div>
-      <a-menu v-model:selectedKeys="selectedKeys" theme="dark" mode="inline">
+      <a-menu v-model:selectedKeys="selectedKeys" v-model:openKeys="openKeys" theme="dark" mode="inline">
         <a-menu-item key="/">
           <router-link to="/">首页看板</router-link>
         </a-menu-item>
@@ -19,12 +19,20 @@
         <a-menu-item key="/categories">
           <router-link to="/categories">分类管理</router-link>
         </a-menu-item>
-        <a-menu-item key="/budgets">
-          <router-link to="/budgets">预算与目标</router-link>
+        <a-menu-item key="/budget">
+          <router-link to="/budget">预算</router-link>
         </a-menu-item>
-        <a-menu-item key="/wishlist">
-          <router-link to="/wishlist">心愿单</router-link>
-        </a-menu-item>
+        <a-sub-menu key="future-plan" title="未来计划">
+          <a-menu-item key="/plan/targets">
+            <router-link to="/plan/targets">目标</router-link>
+          </a-menu-item>
+          <a-menu-item key="/plan/wishlist">
+            <router-link to="/plan/wishlist">心愿单</router-link>
+          </a-menu-item>
+          <a-menu-item key="/plan/liabilities">
+            <router-link to="/plan/liabilities">透支</router-link>
+          </a-menu-item>
+        </a-sub-menu>
         <a-menu-item key="/settings">
           <router-link to="/settings">系统设置</router-link>
         </a-menu-item>
@@ -50,11 +58,17 @@ import { useRoute } from 'vue-router';
 
 const collapsed = ref<boolean>(false);
 const selectedKeys = ref<string[]>(['/']);
+const openKeys = ref<string[]>(['future-plan']);
 const route = useRoute();
 
 watch(() => route.path, (newPath) => {
   selectedKeys.value = [newPath];
-});
+  if (newPath.startsWith('/plan/')) {
+    if (!openKeys.value.includes('future-plan')) {
+      openKeys.value.push('future-plan');
+    }
+  }
+}, { immediate: true });
 </script>
 
 <style scoped>
