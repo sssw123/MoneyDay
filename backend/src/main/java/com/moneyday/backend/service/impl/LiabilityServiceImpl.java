@@ -37,6 +37,10 @@ public class LiabilityServiceImpl implements LiabilityService {
     @Autowired
     private CycleTemplateMapper cycleTemplateMapper;
 
+    @Autowired
+    @org.springframework.context.annotation.Lazy
+    private com.moneyday.backend.service.TodoService todoService;
+
     @Override
     public List<LiabilityVO> getAllLiabilities() {
         // 自动巡检并补扣到期还款
@@ -220,6 +224,10 @@ public class LiabilityServiceImpl implements LiabilityService {
             liability.setNextRepaymentDate(shifted.withDayOfMonth(Math.min(rDay, shifted.lengthOfMonth())));
         }
         liabilityMapper.updateById(liability);
+
+        if (todoService != null) {
+            todoService.resolveTodoByBiz("LIABILITY_OVERDUE", String.valueOf(liability.getId()));
+        }
     }
 
     @Override
@@ -258,6 +266,10 @@ public class LiabilityServiceImpl implements LiabilityService {
         liability.setSettledAt(LocalDateTime.now());
         liability.setNextRepaymentDate(null);
         liabilityMapper.updateById(liability);
+
+        if (todoService != null) {
+            todoService.resolveTodoByBiz("LIABILITY_OVERDUE", String.valueOf(liability.getId()));
+        }
     }
 
     @Override
@@ -303,16 +315,32 @@ public class LiabilityServiceImpl implements LiabilityService {
                 continue;
             }
 
-            // 决定扣款账户 (默认账户余额充足则用默认，不足则降级为系统余额最多的账户)
-            Long targetAccountId = l.getDefaultAccountId();
-            Account defAcc = targetAccountId != null ? accountMapper.selectById(targetAccountId) : null;
-            if (defAcc == null || defAcc.getCurrentBalance().compareTo(l.getPeriodAmount()) < 0) {
-                Account bestAcc = accountMapper.selectOne(new QueryWrapper<Account>().orderByDesc("current_balance").last("LIMIT 1"));
+            // 决定扣款账户 (严格单账户全额覆盖原则：优先默认账户；不足时寻找其他单个能覆盖全额且余额最大的账户；均不足绝不扣款并写待办)
+            Long targetAccountId = null;
+            Account defAcc = l.getDefaultAccountId() != null ? accountMapper.selectById(l.getDefaultAccountId()) : null;
+            if (defAcc != null && defAcc.getCurrentBalance().compareTo(l.getPeriodAmount()) >= 0) {
+                targetAccountId = defAcc.getId();
+            } else {
+                // 默认账户不足，从全系统其他账户中寻找单个余额能够覆盖的分期金额的账户
+                Account bestAcc = accountMapper.selectOne(
+                        new QueryWrapper<Account>()
+                                .ge("current_balance", l.getPeriodAmount())
+                                .orderByDesc("current_balance")
+                                .last("LIMIT 1")
+                );
                 if (bestAcc != null) {
                     targetAccountId = bestAcc.getId();
                 }
             }
+
             if (targetAccountId == null) {
+                // 没有任何单一账户能够覆盖分期金额，坚决不扣款！生成/维持待办告警
+                if (todoService != null) {
+                    String title = "【分期扣款失败】" + l.getName();
+                    String content = String.format("应还金额 ¥%s (第%d/%d期)，各账户余额均不足以全额覆盖，已暂停扣款，请及时充值或处理",
+                            l.getPeriodAmount(), l.getCurrentPeriod() + 1, l.getTotalPeriods());
+                    todoService.createTodoIfNotExists("LIABILITY_OVERDUE", title, content, String.valueOf(l.getId()));
+                }
                 continue;
             }
 
@@ -340,6 +368,11 @@ public class LiabilityServiceImpl implements LiabilityService {
                 l.setNextRepaymentDate(shifted.withDayOfMonth(Math.min(rDay, shifted.lengthOfMonth())));
             }
             liabilityMapper.updateById(l);
+
+            // 扣款成功，核销对应的待办
+            if (todoService != null) {
+                todoService.resolveTodoByBiz("LIABILITY_OVERDUE", String.valueOf(l.getId()));
+            }
         }
     }
 }

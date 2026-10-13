@@ -43,6 +43,10 @@ public class WishlistServiceImpl implements WishlistService {
     @Autowired
     private TransactionService transactionService;
 
+    @Autowired
+    @org.springframework.context.annotation.Lazy
+    private com.moneyday.backend.service.TodoService todoService;
+
     @Override
     public List<WishlistVO> getAllWishlists() {
         List<Wishlist> list = wishlistMapper.selectList(null);
@@ -257,6 +261,10 @@ public class WishlistServiceImpl implements WishlistService {
         tx.setRemark("【心愿实现】" + item.getName());
 
         transactionService.addTransaction(tx);
+
+        if (todoService != null) {
+            todoService.resolveTodoByBiz("WISHLIST_REACHED", String.valueOf(item.getId()));
+        }
     }
 
     @Override

@@ -33,13 +33,24 @@
             <router-link to="/plan/liabilities">透支</router-link>
           </a-menu-item>
         </a-sub-menu>
+        <a-menu-item key="/todos">
+          <router-link to="/todos" style="display: flex; align-items: center; justify-content: space-between;">
+            <span>待办中心</span>
+            <a-badge v-if="pendingCount > 0" :count="pendingCount" size="small" :overflow-count="99" />
+          </router-link>
+        </a-menu-item>
         <a-menu-item key="/settings">
           <router-link to="/settings">系统设置</router-link>
         </a-menu-item>
       </a-menu>
     </a-layout-sider>
     <a-layout :style="{ marginLeft: collapsed ? '80px' : '200px', transition: 'all 0.2s', minHeight: '100vh' }">
-      <a-layout-header style="background: #fff; padding: 0" />
+      <a-layout-header style="background: #fff; padding: 0 24px; display: flex; justify-content: flex-end; align-items: center; border-bottom: 1px solid #f0f0f0;">
+        <router-link to="/todos" style="display: flex; align-items: center; gap: 8px; color: #555;">
+          <span>待办事项</span>
+          <a-badge :count="pendingCount" size="small" />
+        </router-link>
+      </a-layout-header>
       <a-layout-content style="margin: 16px">
         <div :style="{ padding: '24px', background: '#fff', minHeight: '360px' }">
           <router-view />
@@ -53,13 +64,22 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, watch } from 'vue';
+import { ref, watch, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
+import request from './utils/request';
 
 const collapsed = ref<boolean>(false);
 const selectedKeys = ref<string[]>(['/']);
 const openKeys = ref<string[]>(['future-plan']);
+const pendingCount = ref<number>(0);
 const route = useRoute();
+
+const fetchPendingCount = async () => {
+  try {
+    const res: any = await request.get('/todos/pending-count');
+    pendingCount.value = res.count || 0;
+  } catch (e) {}
+};
 
 watch(() => route.path, (newPath) => {
   selectedKeys.value = [newPath];
@@ -68,7 +88,12 @@ watch(() => route.path, (newPath) => {
       openKeys.value.push('future-plan');
     }
   }
+  fetchPendingCount();
 }, { immediate: true });
+
+onMounted(() => {
+  fetchPendingCount();
+});
 </script>
 
 <style scoped>

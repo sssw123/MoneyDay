@@ -8,6 +8,7 @@ import java.util.TimeZone;
 import jakarta.annotation.PostConstruct;
 
 @SpringBootApplication
+@org.springframework.scheduling.annotation.EnableScheduling
 @MapperScan("com.moneyday.backend.mapper")
 public class BackendApplication {
 

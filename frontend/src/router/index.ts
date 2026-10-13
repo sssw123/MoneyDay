@@ -52,6 +52,11 @@ const router = createRouter({
       component: () => import('../views/Liability.vue')
     },
     {
+      path: '/todos',
+      name: 'TodoCenter',
+      component: () => import('../views/TodoCenter.vue')
+    },
+    {
       path: '/settings',
       name: 'Settings',
       component: () => import('../views/Settings.vue')
