@@ -228,7 +228,7 @@
 <script lang="ts" setup>
 import { ref, onMounted, computed } from 'vue';
 import { showToast, showConfirmDialog } from 'vant';
-import request from '../utils/request';
+import { wishlistService, targetService, liabilityService, accountService } from '../services';
 
 const activeTab = ref('wishlist');
 const wishlists = ref<any[]>([]);
@@ -273,10 +273,10 @@ const accountColumns = computed(() => {
 const fetchData = async () => {
   try {
     const [w, t, l, a] = await Promise.all([
-      request.get('/wishlists'),
-      request.get('/targets'),
-      request.get('/liabilities'),
-      request.get('/accounts')
+      wishlistService.getAllWishlists(),
+      targetService.getAllTargets(),
+      liabilityService.getAllLiabilities(),
+      accountService.getAccounts()
     ]);
     wishlists.value = w || [];
     targets.value = t || [];
@@ -307,13 +307,15 @@ const handleRealizeOk = async () => {
   }
   try {
     if (realizeType.value === 'WISHLIST') {
-      await request.post(`/wishlists/${currentRealizeItem.value.id}/realize`, {
-        accountId: selectedAccountId.value
-      });
+      await wishlistService.realizeWishlist(
+        currentRealizeItem.value.id,
+        selectedAccountId.value
+      );
     } else {
-      await request.post(`/targets/${currentRealizeItem.value.id}/realize`, {
-        accountId: selectedAccountId.value
-      });
+      await targetService.realizeTarget(
+        currentRealizeItem.value.id,
+        selectedAccountId.value
+      );
     }
     showToast({ type: 'success', message: '操作成功' });
     realizeVisible.value = false;
@@ -325,7 +327,7 @@ const handleRealizeOk = async () => {
 const unrealizeWishlist = (id: number) => {
   showConfirmDialog({ title: '确认撤销', message: '确定撤销该心愿的实现状态吗？扣款流水将被删除并退回余额' }).then(async () => {
     try {
-      await request.post(`/wishlists/${id}/unrealize`);
+      await wishlistService.unrealizeWishlist(id);
       showToast({ type: 'success', message: '已撤销' });
       fetchData();
     } catch (e) {}
@@ -335,7 +337,7 @@ const unrealizeWishlist = (id: number) => {
 const unrealizeTarget = (id: number) => {
   showConfirmDialog({ title: '确认撤销', message: '确定撤销该目标的实现状态吗？扣款流水将被删除并退回余额' }).then(async () => {
     try {
-      await request.post(`/targets/${id}/unrealize`);
+      await targetService.unrealizeTarget(id);
       showToast({ type: 'success', message: '已撤销' });
       fetchData();
     } catch (e) {}
@@ -357,11 +359,12 @@ const handleRepayOk = async () => {
     return;
   }
   try {
-    await request.post(`/liabilities/${currentLiability.value.id}/repay`, {
-      periods: Number(repayPeriodsNum.value),
-      amount: Number(repayAmount.value),
-      accountId: selectedAccountId.value
-    });
+    await liabilityService.repayPeriods(
+      currentLiability.value.id,
+      Number(repayPeriodsNum.value),
+      Number(repayAmount.value),
+      selectedAccountId.value
+    );
     showToast({ type: 'success', message: '还款成功' });
     repayVisible.value = false;
     fetchData();
@@ -383,10 +386,11 @@ const handleSettleOk = async () => {
     return;
   }
   try {
-    await request.post(`/liabilities/${currentLiability.value.id}/settle`, {
-      settleAmount: Number(settleAmount.value),
-      accountId: selectedAccountId.value
-    });
+    await liabilityService.settleLiability(
+      currentLiability.value.id,
+      selectedAccountId.value,
+      Number(settleAmount.value)
+    );
     showToast({ type: 'success', message: '已提前结清！' });
     settleVisible.value = false;
     fetchData();
@@ -396,7 +400,7 @@ const handleSettleOk = async () => {
 // 删除
 const deleteWishlist = (id: number) => {
   showConfirmDialog({ title: '确认删除', message: '确定删除该心愿吗？' }).then(async () => {
-    await request.delete(`/wishlists/${id}`);
+    await wishlistService.deleteWishlist(id);
     showToast({ type: 'success', message: '已删除' });
     fetchData();
   });
@@ -404,7 +408,7 @@ const deleteWishlist = (id: number) => {
 
 const deleteTarget = (id: number) => {
   showConfirmDialog({ title: '确认删除', message: '确定删除该目标吗？' }).then(async () => {
-    await request.delete(`/targets/${id}`);
+    await targetService.deleteTarget(id);
     showToast({ type: 'success', message: '已删除' });
     fetchData();
   });
@@ -412,7 +416,7 @@ const deleteTarget = (id: number) => {
 
 const deleteLiability = (id: number) => {
   showConfirmDialog({ title: '确认删除', message: '确定删除该分期吗？历史扣款流水将保留' }).then(async () => {
-    await request.delete(`/liabilities/${id}`);
+    await liabilityService.deleteLiability(id);
     showToast({ type: 'success', message: '已删除' });
     fetchData();
   });
@@ -445,17 +449,17 @@ const handleAddSubmit = async () => {
   }
   try {
     if (activeTab.value === 'wishlist') {
-      await request.post('/wishlists', {
+      await wishlistService.addWishlist({
         name: addForm.value.name,
         targetAmount: Number(addForm.value.targetAmount)
       });
     } else if (activeTab.value === 'target') {
-      await request.post('/targets', {
+      await targetService.addTarget({
         name: addForm.value.name,
         targetAmount: Number(addForm.value.targetAmount)
       });
     } else {
-      await request.post('/liabilities', {
+      await liabilityService.addLiability({
         name: addForm.value.name,
         principal: Number(addForm.value.principal),
         totalPeriods: Number(addForm.value.totalPeriods),

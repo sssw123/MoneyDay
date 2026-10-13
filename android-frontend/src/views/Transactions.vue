@@ -163,7 +163,7 @@
 <script lang="ts" setup>
 import { ref, onMounted, computed } from 'vue';
 import { showToast, showConfirmDialog } from 'vant';
-import request from '../utils/request';
+import { transactionService, accountService, categoryService } from '../services';
 
 const refreshing = ref(false);
 const transactions = ref<any[]>([]);
@@ -253,9 +253,9 @@ const getAmountPrefix = (type: number) => {
 const fetchData = async () => {
   try {
     const [txs, accs, cats] = await Promise.all([
-      request.get('/transactions'),
-      request.get('/accounts'),
-      request.get('/categories')
+      transactionService.getAllTransactions(),
+      accountService.getAccounts(),
+      categoryService.getCategories()
     ]);
     transactions.value = txs || [];
     accounts.value = accs || [];
@@ -320,7 +320,7 @@ const handleSubmit = async () => {
   }
 
   try {
-    await request.post('/transactions', {
+    await transactionService.addTransaction({
       type: form.value.type,
       amount: Number(form.value.amount),
       transactionDate: form.value.transactionDate,
@@ -341,7 +341,7 @@ const handleDelete = (id: number) => {
     message: '删除此笔流水将同时自动回滚账户余额，确定删除吗？'
   }).then(async () => {
     try {
-      await request.delete(`/transactions/${id}`);
+      await transactionService.deleteTransaction(id);
       showToast({ type: 'success', message: '已删除' });
       fetchData();
     } catch (e) {}

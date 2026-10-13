@@ -9,14 +9,19 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@capacitor-community/sqlite": "^8.1.1",
+    "@capacitor/android": "^8.5.3",
+    "@capacitor/core": "^8.5.3",
+    "@vant/use": "^1.6.0",
     "axios": "^1.7.0",
     "dayjs": "^1.11.10",
+    "jeep-sqlite": "^2.8.0",
     "vant": "^4.9.1",
-    "@vant/use": "^1.6.0",
     "vue": "^3.4.21",
     "vue-router": "^4.3.0"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.5.3",
     "@types/node": "^20.11.24",
     "@vitejs/plugin-vue": "^5.0.4",
     "typescript": "^5.3.3",

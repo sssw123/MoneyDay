@@ -100,7 +100,7 @@
 <script lang="ts" setup>
 import { ref, onMounted } from 'vue';
 import { showToast } from 'vant';
-import request from '../utils/request';
+import { accountService, categoryService, cycleService } from '../services';
 
 const accounts = ref<any[]>([]);
 const categories = ref<any[]>([]);
@@ -117,9 +117,9 @@ const formatNum = (val: any) => Number(val || 0).toFixed(2);
 const fetchData = async () => {
   try {
     const [accs, cats, tpls]: any = await Promise.all([
-      request.get('/accounts'),
-      request.get('/categories'),
-      request.get('/cycle-templates')
+      accountService.getAccounts(),
+      categoryService.getCategories(),
+      cycleService.getCycleTemplates()
     ]);
     accounts.value = accs || [];
     categories.value = cats || [];
@@ -140,7 +140,7 @@ const submitAddAccount = async () => {
     return;
   }
   try {
-    await request.post('/accounts', {
+    await accountService.addAccount({
       name: accForm.value.name,
       type: accForm.value.type,
       initialBalance: Number(accForm.value.initialBalance || 0),
@@ -163,7 +163,7 @@ const submitAddCategory = async () => {
     return;
   }
   try {
-    await request.post('/categories', {
+    await categoryService.addCategory({
       name: catForm.value.name,
       type: catForm.value.type,
       isActive: 1
@@ -176,10 +176,7 @@ const submitAddCategory = async () => {
 
 const toggleCategory = async (cat: any, val: boolean) => {
   try {
-    await request.put(`/categories/${cat.id}`, {
-      ...cat,
-      isActive: val ? 1 : 0
-    });
+    await categoryService.toggleCategory(cat.id, val ? 1 : 0);
     cat.isActive = val ? 1 : 0;
     showToast('更新成功');
   } catch (e) {}
@@ -188,7 +185,7 @@ const toggleCategory = async (cat: any, val: boolean) => {
 const saveTemplate = async () => {
   if (!template.value) return;
   try {
-    await request.put(`/cycle-templates/${template.value.id}`, template.value);
+    await cycleService.saveCycleTemplate(template.value);
     showToast({ type: 'success', message: '模板保存成功' });
   } catch (e) {}
 };

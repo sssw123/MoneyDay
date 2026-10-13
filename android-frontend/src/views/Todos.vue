@@ -97,7 +97,7 @@
 import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { showToast } from 'vant';
-import request from '../utils/request';
+import { todoService, accountService, wishlistService } from '../services';
 
 const router = useRouter();
 
@@ -157,7 +157,7 @@ const getCardClass = (item: any) => {
 
 const fetchTodos = async () => {
   try {
-    const list: any = await request.get('/todos', { params: { status: statusFilter.value } });
+    const list = await todoService.getTodos(statusFilter.value);
     todos.value = list || [];
   } catch (e) {
   } finally {
@@ -167,7 +167,7 @@ const fetchTodos = async () => {
 
 const fetchAccounts = async () => {
   try {
-    accounts.value = await request.get('/accounts') || [];
+    accounts.value = await accountService.getAccounts() || [];
   } catch (e) {}
 };
 
@@ -180,7 +180,7 @@ const onAccountConfirm = ({ selectedOptions }: any) => {
 
 const dismissTodo = async (id: number) => {
   try {
-    await request.post(`/todos/${id}/dismiss`);
+    await todoService.dismissTodo(id);
     showToast('已忽略');
     fetchTodos();
   } catch (e) {}
@@ -188,7 +188,7 @@ const dismissTodo = async (id: number) => {
 
 const resolveTodo = async (id: number) => {
   try {
-    await request.post(`/todos/${id}/resolve`);
+    await todoService.resolveTodo(id);
     showToast({ type: 'success', message: '已标记完成' });
     fetchTodos();
   } catch (e) {}
@@ -220,14 +220,16 @@ const handleModalOk = async () => {
   }
   try {
     if (currentTodo.value.type === 'LIABILITY_OVERDUE') {
-      await request.post(`/todos/${currentTodo.value.id}/retry-repay`, {
-        accountId: selectedAccountId.value
-      });
+      await todoService.retryLiabilityRepayment(
+        currentTodo.value.id,
+        selectedAccountId.value
+      );
       showToast({ type: 'success', message: '补扣成功！' });
     } else if (currentTodo.value.type === 'WISHLIST_REACHED') {
-      await request.post(`/wishlists/${currentTodo.value.bizId}/realize`, {
-        accountId: selectedAccountId.value
-      });
+      await wishlistService.realizeWishlist(
+        Number(currentTodo.value.bizId),
+        selectedAccountId.value
+      );
       showToast({ type: 'success', message: '心愿实现成功！' });
     }
     modalVisible.value = false;

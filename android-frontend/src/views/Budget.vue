@@ -120,7 +120,7 @@
 <script lang="ts" setup>
 import { ref, onMounted, computed } from 'vue';
 import { showToast, showConfirmDialog } from 'vant';
-import request from '../utils/request';
+import { cycleService, accountService } from '../services';
 
 const refreshing = ref(false);
 const cycles = ref<any[]>([]);
@@ -166,8 +166,8 @@ const accountColumns = computed(() => {
 const fetchData = async () => {
   try {
     const [c, a] = await Promise.all([
-      request.get('/cycles'),
-      request.get('/accounts')
+      cycleService.getRecentCycles(6),
+      accountService.getAccounts()
     ]);
     cycles.value = c || [];
     accounts.value = a || [];
@@ -186,7 +186,7 @@ const handleTagClick = (record: any, item: any) => {
       message: `确定要撤销「${item.name}」的完成状态吗？关联的流水将自动删除并回退账户余额。`
     }).then(async () => {
       try {
-        await request.post(`/cycles/${record.id}/unbook-item/${item.id}`);
+        await cycleService.unbookItem(record.id, item.id);
         showToast({ type: 'success', message: '已撤销' });
         fetchData();
       } catch (e) {}
@@ -240,11 +240,13 @@ const handleItemOk = async () => {
     return;
   }
   try {
-    await request.post(`/cycles/${itemCycleId.value}/book-item/${itemTargetId.value}`, {
-      amount: Number(itemAmount.value),
-      accountId: itemAccountId.value,
-      date: itemDate.value
-    });
+    await cycleService.bookItem(
+      itemCycleId.value!,
+      itemTargetId.value,
+      itemAccountId.value,
+      Number(itemAmount.value),
+      itemDate.value
+    );
     showToast({ type: 'success', message: '记账成功' });
     itemVisible.value = false;
     fetchData();

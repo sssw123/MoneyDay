@@ -19,7 +19,7 @@
 <script lang="ts" setup>
 import { ref, onMounted, watch } from 'vue';
 import { useRoute } from 'vue-router';
-import request from './utils/request';
+import { todoService, inspectionService } from './services';
 
 const activeTab = ref(0);
 const pendingCount = ref<number>(0);
@@ -27,8 +27,7 @@ const route = useRoute();
 
 const fetchPendingCount = async () => {
   try {
-    const res: any = await request.get('/todos/pending-count');
-    pendingCount.value = res.count || 0;
+    pendingCount.value = await todoService.countPending();
   } catch (e) {}
 };
 
@@ -36,8 +35,9 @@ watch(() => route.path, () => {
   fetchPendingCount();
 });
 
-onMounted(() => {
-  fetchPendingCount();
+onMounted(async () => {
+  await inspectionService.executeAllChecks();
+  await fetchPendingCount();
 });
 </script>
 

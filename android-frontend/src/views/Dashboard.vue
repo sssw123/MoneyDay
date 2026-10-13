@@ -104,15 +104,15 @@
 
 <script lang="ts" setup>
 import { ref, onMounted, computed } from 'vue';
-import request from '../utils/request';
+import { statService, cycleService, liabilityService, wishlistService } from '../services';
 
 const showAmount = ref(true);
 const refreshing = ref(false);
 
 const stats = ref<any>({
   totalAssets: 0,
-  totalLiabilityAmount: 0,
-  availableNetAssets: 0,
+  totalLiabilities: 0,
+  availableAssets: 0,
   cumulativeBalance: 0
 });
 
@@ -145,10 +145,10 @@ const calcProgress = (cur: number, total: number) => {
 const fetchData = async () => {
   try {
     const [s, c, l, w] = await Promise.all([
-      request.get('/stats'),
-      request.get('/cycles'),
-      request.get('/liabilities'),
-      request.get('/wishlists')
+      statService.getStats(),
+      cycleService.getRecentCycles(6),
+      liabilityService.getAllLiabilities(),
+      wishlistService.getAllWishlists()
     ]);
     stats.value = s || {};
     cycles.value = c || [];
