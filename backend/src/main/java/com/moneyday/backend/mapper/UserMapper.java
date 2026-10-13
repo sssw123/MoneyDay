@@ -9,9 +9,4 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 
 @Mapper
 public interface UserMapper extends BaseMapper<User> {
-
-    
-
-    @Update("UPDATE user SET billing_cycle_start_day = #{billingCycleStartDay} WHERE username = #{username}")
-    int updateBillingCycle(@Param("username") String username, @Param("billingCycleStartDay") Integer billingCycleStartDay);
 }

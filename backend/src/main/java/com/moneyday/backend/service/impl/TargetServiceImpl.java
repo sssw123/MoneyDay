@@ -148,7 +148,6 @@ public class TargetServiceImpl implements TargetService {
         for (Target t : targets) {
             TargetVO vo = new TargetVO();
             BeanUtils.copyProperties(t, vo);
-            vo.setType("LONG_TERM");
             BigDecimal availableFunds = availableNetAssets;
             vo.setAvailableFunds(availableFunds);
 
@@ -244,14 +243,12 @@ public class TargetServiceImpl implements TargetService {
         if (target.getStartDate() == null) {
             target.setStartDate(LocalDate.now());
         }
-        target.setType("LONG_TERM");
         targetMapper.insert(target);
         return target;
     }
 
     @Override
     public Target updateTarget(Target target) {
-        target.setType("LONG_TERM");
         targetMapper.updateById(target);
         return target;
     }
@@ -277,16 +274,12 @@ public class TargetServiceImpl implements TargetService {
             throw new IllegalArgumentException("扣款账户余额不足！当前账户余额: ¥" + account.getCurrentBalance() + "，目标需: ¥" + target.getTargetAmount());
         }
 
-        boolean isLongTerm = "LONG_TERM".equalsIgnoreCase(target.getType());
-        if (isLongTerm) {
-            // 长期目标：强校验总资产
-            BigDecimal totalAssets = statMapper.getTotalAssets();
-            if (totalAssets == null) totalAssets = BigDecimal.ZERO;
-            if (totalAssets.compareTo(target.getTargetAmount()) < 0) {
-                throw new IllegalArgumentException("总资产不足，严禁实现！当前总资产: ¥" + totalAssets + "，目标需: ¥" + target.getTargetAmount());
-            }
+        // 目标：强校验总资产
+        BigDecimal totalAssets = statMapper.getTotalAssets();
+        if (totalAssets == null) totalAssets = BigDecimal.ZERO;
+        if (totalAssets.compareTo(target.getTargetAmount()) < 0) {
+            throw new IllegalArgumentException("总资产不足，严禁实现！当前总资产: ¥" + totalAssets + "，目标需: ¥" + target.getTargetAmount());
         }
-        // 心愿单 (WISHLIST)：扣款账户余额充足即可兑现（结余不足已由前端软警告二次确认）
 
         target.setIsRealized(1);
         targetMapper.updateById(target);

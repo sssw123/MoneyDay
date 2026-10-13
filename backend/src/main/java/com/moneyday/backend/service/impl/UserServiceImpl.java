@@ -42,11 +42,4 @@ public class UserServiceImpl implements UserService {
     public User getByUsername(String username) {
         return userMapper.selectOne(new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<com.moneyday.backend.entity.User>().eq("username", username));
     }
-
-    public void updateProfile(String username, Integer billingCycleStartDay) {
-        if (billingCycleStartDay < 1 || billingCycleStartDay > 28) {
-            throw new IllegalArgumentException("璐﹀崟鍛ㄦ湡璧风畻鏃ュ繀椤诲湪1-28涔嬮棿");
-        }
-        userMapper.updateBillingCycle(username, billingCycleStartDay);
-    }
 }

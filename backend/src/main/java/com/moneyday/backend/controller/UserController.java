@@ -25,10 +25,4 @@ public class UserController {
         // Mock get current user for MVP
         return Result.success(userService.getByUsername("admin"));
     }
-
-    @PutMapping("/profile")
-    public Result<Void> updateProfile(@RequestBody com.moneyday.backend.entity.User user) {
-        userService.updateProfile("admin", user.getBillingCycleStartDay());
-        return Result.success(null);
-    }
 }

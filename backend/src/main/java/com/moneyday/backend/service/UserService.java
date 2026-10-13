@@ -12,5 +12,4 @@ public interface UserService {
     String login(String username, String password);
     User getByToken(String token);
     User getByUsername(String username);
-    void updateProfile(String username, Integer billingCycleStartDay);
 }

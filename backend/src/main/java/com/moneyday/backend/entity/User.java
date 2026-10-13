@@ -12,7 +12,6 @@ public class User {
     private Long id;
     private String username;
     private String password;
-    private Integer billingCycleStartDay;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -23,8 +22,6 @@ public class User {
     public void setUsername(String username) { this.username = username; }
     public String getPassword() { return password; }
     public void setPassword(String password) { this.password = password; }
-    public Integer getBillingCycleStartDay() { return billingCycleStartDay; }
-    public void setBillingCycleStartDay(Integer billingCycleStartDay) { this.billingCycleStartDay = billingCycleStartDay; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }

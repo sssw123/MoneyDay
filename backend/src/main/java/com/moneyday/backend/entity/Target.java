@@ -17,7 +17,6 @@ public class Target {
     private LocalDate startDate;
     private LocalDate deadline;
     private Integer isRealized;
-    private String type = "WISHLIST";
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -33,8 +32,6 @@ public class Target {
     public void setDeadline(LocalDate deadline) { this.deadline = deadline; }
     public Integer getIsRealized() { return isRealized; }
     public void setIsRealized(Integer isRealized) { this.isRealized = isRealized; }
-    public String getType() { return type; }
-    public void setType(String type) { this.type = type; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
