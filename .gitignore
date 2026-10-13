@@ -1,0 +1,27 @@
+# Node
+node_modules
+**/node_modules/
+dist
+**/dist/
+dist-ssr
+*.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.tsbuildinfo
+
+# Java / Maven
+target/
+**/target/
+*.class
+
+# IDE
+.idea/
+*.iml
+.vscode/*
+!.vscode/extensions.json
+.DS_Store
+
+# Log
+*.log

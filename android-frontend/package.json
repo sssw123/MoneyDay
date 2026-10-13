@@ -1,0 +1,26 @@
+{
+  "name": "android-frontend",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc -b && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "axios": "^1.7.0",
+    "dayjs": "^1.11.10",
+    "vant": "^4.9.1",
+    "@vant/use": "^1.6.0",
+    "vue": "^3.4.21",
+    "vue-router": "^4.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.24",
+    "@vitejs/plugin-vue": "^5.0.4",
+    "typescript": "^5.3.3",
+    "vite": "^5.1.4",
+    "vue-tsc": "^2.0.6"
+  }
+}
