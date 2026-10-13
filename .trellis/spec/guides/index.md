@@ -24,6 +24,7 @@ These guides help you **ask the right questions before coding**.
 | [Code Reuse Thinking Guide](./code-reuse-thinking-guide.md) | Identify patterns and reduce duplication | When you notice repeated patterns |
 | [Cross-Layer Thinking Guide](./cross-layer-thinking-guide.md) | Think through data flow across layers | Features spanning multiple layers |
 | [Artifact Language Guideline](./artifact-language.md) | 统一规范 Trellis 核心产物的语言为中文 | 编写 prd、design、implement 等文件时 |
+| [Git Commit Convention](./git-commit-convention.md) | Git Commit 规范契约（type+中文描述） | 执行代码提交与 git commit 时 |
 
 ---
 

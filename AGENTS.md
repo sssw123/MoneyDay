@@ -16,6 +16,19 @@ If you're using Codex or another agent-capable tool, additional project-scoped h
 - `.agents/skills/` — reusable Trellis skills
 - `.codex/agents/` — optional custom subagents
 
-Managed by Trellis. Edits outside this block are preserved; edits inside may be overwritten by a future `trellis update`.
-
 <!-- TRELLIS:END -->
+
+# 项目特定约束与契约 (Project Specific Conventions)
+
+## Git Commit 提交信息规范
+所有 `git commit` 提交信息必须严格遵循 **`<type>: <中文描述>`** 格式：
+- `feat: <中文新功能描述>`
+- `fix: <中文Bug修复描述>`
+- `refactor: <中文重构描述>`
+- `docs: <中文文档修改描述>`
+- `style: <中文样式调整描述>`
+- `test: <中文测试用例变动描述>`
+- `chore: <中文构建/工具/配置变动描述>`
+
+详情参见：[git-commit-convention.md](file:///d:/IDEAProjects/MoneyDay/.trellis/spec/guides/git-commit-convention.md)。
+
