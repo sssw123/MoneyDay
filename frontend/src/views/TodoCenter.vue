@@ -263,8 +263,8 @@ const handleRealizeOk = async () => {
     return;
   }
   try {
-    await request.post(`/wishlist/${currentTodo.value.bizId}/realize`, null, {
-      params: { accountId: selectedAccountId.value }
+    await request.post(`/wishlists/${currentTodo.value.bizId}/realize`, {
+      accountId: selectedAccountId.value
     });
     message.success('恭喜！心愿实现成功，待办已核销');
     realizeModalVisible.value = false;

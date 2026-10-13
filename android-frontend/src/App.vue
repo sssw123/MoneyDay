@@ -56,4 +56,10 @@ onMounted(() => {
   flex: 1;
   padding-bottom: 20px;
 }
+
+:deep(.van-tabbar--fixed) {
+  max-width: 600px;
+  left: 50% !important;
+  transform: translateX(-50%);
+}
 </style>

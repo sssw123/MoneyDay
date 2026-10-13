@@ -119,7 +119,7 @@ const fetchData = async () => {
     const [accs, cats, tpls]: any = await Promise.all([
       request.get('/accounts'),
       request.get('/categories'),
-      request.get('/cycles/templates')
+      request.get('/cycle-templates')
     ]);
     accounts.value = accs || [];
     categories.value = cats || [];
@@ -188,7 +188,7 @@ const toggleCategory = async (cat: any, val: boolean) => {
 const saveTemplate = async () => {
   if (!template.value) return;
   try {
-    await request.put(`/cycles/templates/${template.value.id}`, template.value);
+    await request.put(`/cycle-templates/${template.value.id}`, template.value);
     showToast({ type: 'success', message: '模板保存成功' });
   } catch (e) {}
 };

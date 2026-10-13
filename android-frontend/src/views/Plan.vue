@@ -273,7 +273,7 @@ const accountColumns = computed(() => {
 const fetchData = async () => {
   try {
     const [w, t, l, a] = await Promise.all([
-      request.get('/wishlist'),
+      request.get('/wishlists'),
       request.get('/targets'),
       request.get('/liabilities'),
       request.get('/accounts')
@@ -307,12 +307,12 @@ const handleRealizeOk = async () => {
   }
   try {
     if (realizeType.value === 'WISHLIST') {
-      await request.post(`/wishlist/${currentRealizeItem.value.id}/realize`, null, {
-        params: { accountId: selectedAccountId.value }
+      await request.post(`/wishlists/${currentRealizeItem.value.id}/realize`, {
+        accountId: selectedAccountId.value
       });
     } else {
-      await request.post(`/targets/${currentRealizeItem.value.id}/realize`, null, {
-        params: { accountId: selectedAccountId.value }
+      await request.post(`/targets/${currentRealizeItem.value.id}/realize`, {
+        accountId: selectedAccountId.value
       });
     }
     showToast({ type: 'success', message: '操作成功' });
@@ -325,7 +325,7 @@ const handleRealizeOk = async () => {
 const unrealizeWishlist = (id: number) => {
   showConfirmDialog({ title: '确认撤销', message: '确定撤销该心愿的实现状态吗？扣款流水将被删除并退回余额' }).then(async () => {
     try {
-      await request.post(`/wishlist/${id}/unrealize`);
+      await request.post(`/wishlists/${id}/unrealize`);
       showToast({ type: 'success', message: '已撤销' });
       fetchData();
     } catch (e) {}
@@ -357,7 +357,7 @@ const handleRepayOk = async () => {
     return;
   }
   try {
-    await request.post(`/liabilities/${currentLiability.value.id}/repay-periods`, {
+    await request.post(`/liabilities/${currentLiability.value.id}/repay`, {
       periods: Number(repayPeriodsNum.value),
       amount: Number(repayAmount.value),
       accountId: selectedAccountId.value
@@ -396,7 +396,7 @@ const handleSettleOk = async () => {
 // 删除
 const deleteWishlist = (id: number) => {
   showConfirmDialog({ title: '确认删除', message: '确定删除该心愿吗？' }).then(async () => {
-    await request.delete(`/wishlist/${id}`);
+    await request.delete(`/wishlists/${id}`);
     showToast({ type: 'success', message: '已删除' });
     fetchData();
   });
@@ -445,7 +445,7 @@ const handleAddSubmit = async () => {
   }
   try {
     if (activeTab.value === 'wishlist') {
-      await request.post('/wishlist', {
+      await request.post('/wishlists', {
         name: addForm.value.name,
         targetAmount: Number(addForm.value.targetAmount)
       });

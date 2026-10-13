@@ -225,8 +225,8 @@ const handleModalOk = async () => {
       });
       showToast({ type: 'success', message: '补扣成功！' });
     } else if (currentTodo.value.type === 'WISHLIST_REACHED') {
-      await request.post(`/wishlist/${currentTodo.value.bizId}/realize`, null, {
-        params: { accountId: selectedAccountId.value }
+      await request.post(`/wishlists/${currentTodo.value.bizId}/realize`, {
+        accountId: selectedAccountId.value
       });
       showToast({ type: 'success', message: '心愿实现成功！' });
     }

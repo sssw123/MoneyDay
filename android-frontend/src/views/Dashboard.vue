@@ -145,10 +145,10 @@ const calcProgress = (cur: number, total: number) => {
 const fetchData = async () => {
   try {
     const [s, c, l, w] = await Promise.all([
-      request.get('/stats/dashboard'),
+      request.get('/stats'),
       request.get('/cycles'),
       request.get('/liabilities'),
-      request.get('/wishlist')
+      request.get('/wishlists')
     ]);
     stats.value = s || {};
     cycles.value = c || [];
