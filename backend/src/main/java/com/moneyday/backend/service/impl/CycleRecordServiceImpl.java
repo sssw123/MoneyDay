@@ -198,15 +198,33 @@ public class CycleRecordServiceImpl implements CycleRecordService {
             LocalDate nextMonth = sDate.plusMonths(1);
             LocalDate eDate = nextMonth.withDayOfMonth(Math.min(startDay, nextMonth.lengthOfMonth())).minusDays(1);
 
-            CycleRecord record = getOrCreateSnapshot(sDate, eDate);
+            CycleRecord record = null;
+            if (i == 0) {
+                // 只有当前活跃进行中的周期才自动创建快照
+                record = getOrCreateSnapshot(sDate, eDate);
+            } else {
+                // 历史周期：只读查询既有记录，严禁自动向数据库插入空快照
+                QueryWrapper<CycleRecord> query = new QueryWrapper<>();
+                query.eq("cycle_start_date", sDate).eq("cycle_end_date", eDate).last("LIMIT 1");
+                record = cycleRecordMapper.selectOne(query);
+            }
 
             String sDateStr = sDate.format(DateTimeFormatter.ISO_LOCAL_DATE);
             String eDateStr = eDate.format(DateTimeFormatter.ISO_LOCAL_DATE);
 
-            // 动态联动验证：如果标记为已完成，但对应流水不存在或已被删除，自动恢复未完成！
-            boolean needUpdateRecord = false;
-            if (record.getFixedItems() != null) {
-                for (FixedItem item : record.getFixedItems()) {
+            Long recordId = null;
+            List<FixedItem> fixedItems = new ArrayList<>();
+            BigDecimal depositSum = BigDecimal.ZERO;
+
+            if (record != null) {
+                recordId = record.getId();
+                if (record.getFixedItems() != null) {
+                    fixedItems = record.getFixedItems();
+                }
+
+                // 动态联动验证：如果标记为已完成，但对应流水不存在或已被删除，自动恢复未完成！
+                boolean needUpdateRecord = false;
+                for (FixedItem item : fixedItems) {
                     if (Boolean.TRUE.equals(item.getIsBooked())) {
                         if (item.getTransactionId() != null) {
                             Transaction tx = transactionMapper.selectById(item.getTransactionId());
@@ -233,10 +251,13 @@ public class CycleRecordServiceImpl implements CycleRecordService {
                             }
                         }
                     }
+                    if ("DEPOSIT".equals(item.getType()) && item.getAmount() != null) {
+                        depositSum = depositSum.add(item.getAmount());
+                    }
                 }
-            }
-            if (needUpdateRecord) {
-                cycleRecordMapper.updateById(record);
+                if (needUpdateRecord) {
+                    cycleRecordMapper.updateById(record);
+                }
             }
 
             BigDecimal income = statMapper.getIncomeByDate(sDateStr, eDateStr);
@@ -244,24 +265,24 @@ public class CycleRecordServiceImpl implements CycleRecordService {
             BigDecimal expense = statMapper.getExpenseByDate(sDateStr, eDateStr);
             if (expense == null) expense = BigDecimal.ZERO;
 
-            BigDecimal depositSum = BigDecimal.ZERO;
-            if (record.getFixedItems() != null) {
-                for (FixedItem item : record.getFixedItems()) {
-                    if ("DEPOSIT".equals(item.getType()) && item.getAmount() != null) {
-                        depositSum = depositSum.add(item.getAmount());
-                    }
-                }
+            // 结余计算规则：
+            // 1. 若存在周期快照：结余 = 收入 - 支出 - 固存；
+            // 2. 若无快照但有记账流水：结余 = 收入 - 支出（历史补录流水，无固存考核）；
+            // 3. 若无快照且无任何流水：说明该历史周期用户未启用系统，结余为 0，不能扣除固存凭空产生亏空！
+            BigDecimal balance = BigDecimal.ZERO;
+            if (record != null) {
+                balance = income.subtract(expense).subtract(depositSum);
+            } else if (income.compareTo(BigDecimal.ZERO) > 0 || expense.compareTo(BigDecimal.ZERO) > 0) {
+                balance = income.subtract(expense);
             }
-            
-            BigDecimal balance = income.subtract(expense).subtract(depositSum);
 
             Map<String, Object> map = new HashMap<>();
-            map.put("id", record.getId());
+            map.put("id", recordId);
             map.put("cycleStartDate", sDateStr);
             map.put("cycleEndDate", eDateStr);
             map.put("income", income);
             map.put("expense", expense);
-            map.put("fixedItems", record.getFixedItems());
+            map.put("fixedItems", fixedItems);
             map.put("balance", balance);
             list.add(map);
         }
