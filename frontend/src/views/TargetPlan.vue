@@ -144,10 +144,12 @@ const realizeTargetId = ref<number | null>(null);
 const realizeAccountId = ref<number | null>(null);
 
 const fetchData = async () => {
-  targets.value = await request.get('/targets');
-  accounts.value = await request.get('/accounts');
-  const stats: any = await request.get('/stats');
-  availableNetAssets.value = stats.availableAssets || 0;
+  try {
+    targets.value = await request.get('/targets');
+    accounts.value = await request.get('/accounts');
+    const stats: any = await request.get('/stats');
+    availableNetAssets.value = stats.availableAssets || 0;
+  } catch { /* Shared request handling covers errors and discarded prior-user responses. */ }
 };
 
 const showTargetModal = () => {

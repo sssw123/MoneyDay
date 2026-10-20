@@ -104,11 +104,15 @@ const columns = [
 ];
 
 const fetchTemplates = async () => {
-  templates.value = await request.get('/cycle-templates');
+  try {
+    templates.value = await request.get('/cycle-templates');
+  } catch { /* Shared request handling covers errors and discarded prior-user responses. */ }
 };
 
 const fetchCategories = async () => {
-  categories.value = await request.get('/categories');
+  try {
+    categories.value = await request.get('/categories');
+  } catch { /* Shared request handling covers errors and discarded prior-user responses. */ }
 };
 
 const getFilteredCategories = (itemType: string) => {

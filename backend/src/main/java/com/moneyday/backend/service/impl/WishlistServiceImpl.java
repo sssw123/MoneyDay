@@ -21,6 +21,8 @@ import java.util.Map;
 
 @Service
 public class WishlistServiceImpl implements WishlistService {
+    @Autowired private com.moneyday.backend.security.OwnershipGuard guard;
+
 
     @Autowired
     private WishlistMapper wishlistMapper;
@@ -213,30 +215,33 @@ public class WishlistServiceImpl implements WishlistService {
         if (wishlist.getIsRealized() == null) {
             wishlist.setIsRealized(0);
         }
+        wishlist.setId(null);
         wishlistMapper.insert(wishlist);
         return wishlist;
     }
 
     @Override
     public Wishlist updateWishlist(Wishlist wishlist) {
+        guard.require(wishlistMapper,wishlist.getId());
         wishlistMapper.updateById(wishlist);
         return wishlist;
     }
 
     @Override
     public void deleteWishlist(Long id) {
+        guard.require(wishlistMapper,id);
         wishlistMapper.deleteById(id);
     }
 
     @Override
     @Transactional
     public void realizeWishlist(Long id, Long accountId) {
-        Wishlist item = wishlistMapper.selectById(id);
+        Wishlist item = guard.require(wishlistMapper,id);
         if (item == null || (item.getIsRealized() != null && item.getIsRealized() == 1)) {
-            throw new RuntimeException("心愿不存在或已实现");
+            throw new com.moneyday.backend.common.ApiException(400, "心愿不存在或已实现");
         }
 
-        Account account = accountMapper.selectById(accountId);
+        Account account = guard.require(accountMapper,accountId);
         if (account == null) {
             throw new IllegalArgumentException("扣款账户不存在");
         }
@@ -270,9 +275,9 @@ public class WishlistServiceImpl implements WishlistService {
     @Override
     @Transactional
     public void unrealizeWishlist(Long id) {
-        Wishlist item = wishlistMapper.selectById(id);
+        Wishlist item = guard.require(wishlistMapper,id);
         if (item == null || item.getIsRealized() == null || item.getIsRealized() == 0) {
-            throw new RuntimeException("心愿未处于已实现状态");
+            throw new com.moneyday.backend.common.ApiException(400, "心愿未处于已实现状态");
         }
 
         String targetRemark = "【心愿实现】" + item.getName();

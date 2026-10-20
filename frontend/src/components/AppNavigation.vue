@@ -56,6 +56,10 @@
       ><template #icon><SettingOutlined /></template
       ><router-link to="/settings">系统设置</router-link></a-menu-item
     >
+    <a-menu-item v-if="session.user?.role === 'ADMIN'" key="/admin/users">
+      <template #icon><TeamOutlined /></template>
+      <router-link to="/admin/users">用户管理</router-link>
+    </a-menu-item>
   </a-menu>
   <div v-if="!compact" class="nav-note">
     <span class="nav-note-dot"></span>
@@ -66,6 +70,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
+import { session } from '../auth/session';
 import {
   AppstoreOutlined,
   SwapOutlined,
@@ -75,6 +80,7 @@ import {
   RocketOutlined,
   CheckSquareOutlined,
   SettingOutlined,
+  TeamOutlined,
 } from '@ant-design/icons-vue';
 defineProps<{ compact?: boolean; pendingCount: number }>();
 const emit = defineEmits<{ navigate: [] }>();

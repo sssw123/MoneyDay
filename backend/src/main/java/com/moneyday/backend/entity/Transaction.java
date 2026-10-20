@@ -9,7 +9,7 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.IdType;
 
 @TableName("transaction")
-public class Transaction {
+public class Transaction extends UserOwned {
     @TableId(type = IdType.AUTO)
     private Long id;
     private Integer type; // 1=鏀跺叆, 2=鏀嚭, 3=杞处

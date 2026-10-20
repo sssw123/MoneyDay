@@ -29,6 +29,8 @@ import java.util.Map;
 
 @Service
 public class TargetServiceImpl implements TargetService {
+    @Autowired private com.moneyday.backend.security.OwnershipGuard guard;
+
 
     @Autowired
     private TargetMapper targetMapper;
@@ -243,30 +245,33 @@ public class TargetServiceImpl implements TargetService {
         if (target.getStartDate() == null) {
             target.setStartDate(LocalDate.now());
         }
+        target.setId(null);
         targetMapper.insert(target);
         return target;
     }
 
     @Override
     public Target updateTarget(Target target) {
+        guard.require(targetMapper,target.getId());
         targetMapper.updateById(target);
         return target;
     }
 
     @Override
     public void deleteTarget(Long id) {
+        guard.require(targetMapper,id);
         targetMapper.deleteById(id);
     }
 
     @Override
     @Transactional
     public void realizeTarget(Long id, Long accountId) {
-        Target target = targetMapper.selectById(id);
+        Target target = guard.require(targetMapper,id);
         if (target == null || (target.getIsRealized() != null && target.getIsRealized() == 1)) {
-            throw new RuntimeException("目标不存在或已实现");
+            throw new com.moneyday.backend.common.ApiException(400, "目标不存在或已实现");
         }
 
-        Account account = accountMapper.selectById(accountId);
+        Account account = guard.require(accountMapper,accountId);
         if (account == null) {
             throw new IllegalArgumentException("扣款账户不存在");
         }
@@ -304,9 +309,9 @@ public class TargetServiceImpl implements TargetService {
     @Override
     @Transactional
     public void unrealizeTarget(Long id) {
-        Target target = targetMapper.selectById(id);
+        Target target = guard.require(targetMapper,id);
         if (target == null || target.getIsRealized() == null || target.getIsRealized() == 0) {
-            throw new RuntimeException("目标不存在或尚未实现");
+            throw new com.moneyday.backend.common.ApiException(400, "目标不存在或尚未实现");
         }
 
         target.setIsRealized(0);

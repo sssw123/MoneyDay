@@ -11,7 +11,7 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.FieldStrategy;
 
 @TableName("liability")
-public class Liability {
+public class Liability extends UserOwned {
     @TableId(type = IdType.AUTO)
     private Long id;
     private String name;

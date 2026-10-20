@@ -16,6 +16,8 @@ import java.util.List;
 
 @Service
 public class TodoServiceImpl implements TodoService {
+    @Autowired private com.moneyday.backend.security.OwnershipGuard guard;
+
 
     @Autowired
     private TodoItemMapper todoItemMapper;
@@ -44,7 +46,7 @@ public class TodoServiceImpl implements TodoService {
 
     @Override
     public void dismissTodo(Long id) {
-        TodoItem item = todoItemMapper.selectById(id);
+        TodoItem item = guard.require(todoItemMapper,id);
         if (item != null) {
             item.setStatus("DISMISSED");
             todoItemMapper.updateById(item);
@@ -53,7 +55,7 @@ public class TodoServiceImpl implements TodoService {
 
     @Override
     public void resolveTodo(Long id) {
-        TodoItem item = todoItemMapper.selectById(id);
+        TodoItem item = guard.require(todoItemMapper,id);
         if (item != null) {
             item.setStatus("RESOLVED");
             todoItemMapper.updateById(item);
@@ -105,13 +107,14 @@ public class TodoServiceImpl implements TodoService {
     @Override
     @Transactional
     public void retryLiabilityRepayment(Long todoId, Long accountId) {
-        TodoItem item = todoItemMapper.selectById(todoId);
+        TodoItem item = guard.require(todoItemMapper,todoId);
         if (item == null) {
             throw new IllegalArgumentException("待办事项不存在");
         }
         if (!"LIABILITY_OVERDUE".equals(item.getType())) {
             throw new IllegalArgumentException("非分期扣款待办事项");
         }
+        if(accountId!=null) guard.account(accountId);
         Long liabilityId = Long.parseLong(item.getBizId());
         Liability liability = liabilityMapper.selectById(liabilityId);
         if (liability == null || "SETTLED".equalsIgnoreCase(liability.getStatus())) {

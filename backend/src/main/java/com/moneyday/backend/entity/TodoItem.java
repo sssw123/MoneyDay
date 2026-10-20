@@ -6,7 +6,7 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 
 @TableName("todo_item")
-public class TodoItem {
+public class TodoItem extends UserOwned {
     @TableId(type = IdType.AUTO)
     private Long id;
     private String type; // LIABILITY_OVERDUE, CYCLE_FIXED_ITEMS, WISHLIST_REACHED

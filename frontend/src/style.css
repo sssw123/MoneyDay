@@ -622,3 +622,30 @@ p {
     transform: none;
   }
 }
+
+/* Authentication shares ledger surfaces and button motion. */
+.auth-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 32px 20px;
+  background: radial-gradient(ellipse at 15% 15%, #e3f2d4 0, transparent 50%), var(--canvas);
+}
+.auth-card { width: min(100%, 440px); box-shadow: var(--card-shadow); }
+.auth-card h1 { font-size: 28px; margin: 12px 0; }
+.auth-description { color: var(--muted); line-height: 1.7; margin-bottom: 28px; }
+.auth-footnote { color: var(--muted); font-size: 12px; line-height: 1.8; margin: 24px 0 0; }
+.auth-notice { margin-bottom: 24px; }
+.auth-secondary-actions, .modal-actions { display: flex; justify-content: flex-end; gap: 12px; }
+.account-menu-button { height: auto; display: inline-flex; align-items: center; gap: 8px; padding: 4px 6px; max-width: 220px; }
+.account-menu-button .profile-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 120px; }
+.toolbar-filters { display: flex; gap: 12px; flex-wrap: wrap; min-width: 0; }
+.toolbar-filters .ant-input-search { width: 240px; max-width: 100%; }
+.toolbar-filters .ant-select { min-width: 130px; }
+@media (max-width: 767px) {
+  .auth-page { padding: 20px 12px; }
+  .auth-card .ant-card-body { padding: 24px 20px; }
+  .toolbar-filters { width: 100%; }
+  .toolbar-filters .ant-input-search { width: 100%; }
+  .account-menu-button { max-width: 100px; }
+}

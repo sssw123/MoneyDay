@@ -7,4 +7,5 @@ export * from './wishlistService';
 export * from './targetService';
 export * from './todoService';
 export * from './statService';
-export * from './inspectionService';
+export * from './authService';
+export * from './adminService';

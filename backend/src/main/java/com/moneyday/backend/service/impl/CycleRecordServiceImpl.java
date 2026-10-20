@@ -27,6 +27,8 @@ import java.util.UUID;
 
 @Service
 public class CycleRecordServiceImpl implements CycleRecordService {
+    @Autowired private com.moneyday.backend.security.OwnershipGuard guard;
+
 
     @Autowired private CycleRecordMapper cycleRecordMapper;
     @Autowired private CycleTemplateMapper cycleTemplateMapper;
@@ -69,19 +71,21 @@ public class CycleRecordServiceImpl implements CycleRecordService {
     @Override
     public CycleRecord updateFixedDeposit(Long id, BigDecimal newAmount) {
         // Obsolete, left empty or throw
-        throw new UnsupportedOperationException("Obsolete method");
+        guard.require(cycleRecordMapper,id);
+        throw new com.moneyday.backend.common.ApiException(400,"该操作已停用");
     }
 
     @Override
     @Transactional
     public Map<String, Object> bookIncome(Long id, Long accountId, BigDecimal amount, String date) {
         // Obsolete, replaced by bookItem
-        throw new UnsupportedOperationException("Obsolete method");
+        guard.require(cycleRecordMapper,id);
+        throw new com.moneyday.backend.common.ApiException(400,"该操作已停用");
     }
 
     @Transactional
     public Map<String, Object> bookItem(Long recordId, String itemId, Long accountId, BigDecimal amount, String date) {
-        CycleRecord record = cycleRecordMapper.selectById(recordId);
+        CycleRecord record = guard.require(cycleRecordMapper,recordId);
         if (record == null || record.getFixedItems() == null) throw new IllegalArgumentException("周期记录不存在");
 
         FixedItem targetItem = null;
@@ -107,10 +111,11 @@ public class CycleRecordServiceImpl implements CycleRecordService {
         tx.setCategoryId(targetItem.getCategoryId());
         tx.setTransactionDate(LocalDate.parse(date));
         tx.setRemark("周期项目确认：" + targetItem.getName());
+        guard.transaction(tx);
         transactionMapper.insert(tx);
 
         // 更新账户余额
-        Account account = accountMapper.selectById(accountId);
+        Account account = guard.require(accountMapper,accountId);
         if (account != null) {
             BigDecimal diff = "INCOME".equals(targetItem.getType()) ? amount : amount.negate();
             account.setCurrentBalance(account.getCurrentBalance().add(diff));
@@ -132,7 +137,7 @@ public class CycleRecordServiceImpl implements CycleRecordService {
     @Override
     @Transactional
     public Map<String, Object> unbookItem(Long recordId, String itemId) {
-        CycleRecord record = cycleRecordMapper.selectById(recordId);
+        CycleRecord record = guard.require(cycleRecordMapper,recordId);
         if (record == null || record.getFixedItems() == null) throw new IllegalArgumentException("周期记录不存在");
 
         FixedItem targetItem = null;

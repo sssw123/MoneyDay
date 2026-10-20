@@ -1,11 +1,13 @@
 <template>
   <div class="mobile-container">
     <div class="content-wrapper">
-      <router-view />
+      <van-notice-bar v-if="session.connectionFailed" wrapable :scrollable="false" text="服务器连接失败，当前无法保存。请检查网络后重试。" />
+      <div v-if="session.connectionFailed" style="padding: 8px 16px"><van-button block size="small" :loading="reconnecting" @click="retry">重新连接</van-button></div>
+      <router-view :key="`${session.generation}:${route.path}:${retryCount}`" />
     </div>
 
     <!-- 底部常驻 Tabbar -->
-    <van-tabbar v-model="activeTab" route fixed placeholder safe-area-inset-bottom active-color="#1989fa">
+    <van-tabbar v-if="showTabbar" v-model="activeTab" route fixed placeholder safe-area-inset-bottom active-color="#1989fa">
       <van-tabbar-item to="/" icon="wap-home-o">看板</van-tabbar-item>
       <van-tabbar-item to="/transactions" icon="balance-list-o">明细</van-tabbar-item>
       <van-tabbar-item to="/budget" icon="calendar-o">周期表</van-tabbar-item>
@@ -17,28 +19,38 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, onMounted, watch } from 'vue';
-import { useRoute } from 'vue-router';
-import { todoService, inspectionService } from './services';
+import { ref, watch, computed } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { todoService, authService } from './services';
+import { session } from './state/session';
 
 const activeTab = ref(0);
-const pendingCount = ref<number>(0);
+const pendingCount = ref(0);
 const route = useRoute();
-
-const fetchPendingCount = async () => {
+const router = useRouter();
+const reconnecting = ref(false);
+const retryCount = ref(0);
+const showTabbar = computed(() => !!session.token && !!session.user && !session.user.mustChangePassword && !['/login', '/change-password'].includes(route.path));
+async function fetchPendingCount() {
+  if (!showTabbar.value) { pendingCount.value = 0; return; }
+  try { pendingCount.value = await todoService.countPending(); } catch { /* Shared connection notice. */ }
+}
+async function retry() {
+  if (reconnecting.value) return;
+  reconnecting.value = true;
   try {
-    pendingCount.value = await todoService.countPending();
-  } catch (e) {}
-};
-
-watch(() => route.path, () => {
-  fetchPendingCount();
-});
-
-onMounted(async () => {
-  await inspectionService.executeAllChecks();
-  await fetchPendingCount();
-});
+    if (session.token) {
+      const user = await authService.profile();
+      await router.replace(user.mustChangePassword ? '/change-password' : route.path === '/login' ? '/' : route.fullPath);
+    } else {
+      await router.replace('/login');
+    }
+    retryCount.value++;
+    await fetchPendingCount();
+  } catch { /* A failed retry preserves the connection notice and login screen. */ }
+  finally { reconnecting.value = false; }
+}
+watch(() => [route.path, session.generation], () => { pendingCount.value = 0; void fetchPendingCount(); }, { immediate: true });
 </script>
 
 <style scoped>

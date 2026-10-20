@@ -1,6 +1,12 @@
-import { createRouter, createWebHistory } from 'vue-router';
+import { createRouter, createWebHashHistory } from 'vue-router';
+import { session } from '../state/session';
+import { authService } from '../services/authService';
+import { ensureAccess } from '../state/routeAccess';
 
 const routes = [
+  { path: '/login', component: () => import('../views/Login.vue'), meta: { title: '登录', public: true } },
+  { path: '/change-password', component: () => import('../views/ChangePassword.vue'), meta: { title: '修改密码' } },
+  { path: '/admin/users', component: () => import('../views/AdminUsers.vue'), meta: { title: '用户管理', admin: true } },
   {
     path: '/',
     name: 'Dashboard',
@@ -40,8 +46,18 @@ const routes = [
 ];
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHashHistory(),
   routes
+});
+
+router.beforeEach(ensureAccess);
+window.addEventListener('moneyday:unauthorized', () => { void router.replace('/login'); });
+window.addEventListener('moneyday:forbidden', async () => {
+  if (router.currentRoute.value.path === '/change-password') return;
+  try {
+    const user = await authService.profile();
+    if (user.mustChangePassword) await router.replace('/change-password');
+  } catch { /* Request interceptor handles expired sessions. */ }
 });
 
 router.afterEach((to) => {

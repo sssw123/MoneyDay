@@ -7,7 +7,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import java.util.TimeZone;
 import jakarta.annotation.PostConstruct;
 
-@SpringBootApplication
+@SpringBootApplication(exclude = org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration.class)
 @org.springframework.scheduling.annotation.EnableScheduling
 @MapperScan("com.moneyday.backend.mapper")
 public class BackendApplication {
