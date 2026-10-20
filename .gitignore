@@ -25,3 +25,20 @@ target/
 
 # Log
 *.log
+
+# Archives & Temporary files
+*.zip
+*.tar.gz
+*.rar
+*.7z
+*.bak
+*.tmp
+*.swp
+
+# Local configurations
+application-local.yml
+application-local.yaml
+application-local.properties
+!application-local.yml.example
+
+

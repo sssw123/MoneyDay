@@ -1,163 +1,182 @@
-# MoneyDay · 记账与攒钱
+# MoneyDay · 记账与攒钱系统
 
-MoneyDay 是为个人日常使用设计的记账与攒钱项目：记录钱从哪里来、花到哪里去，了解账户余额与每月预算，并持续跟踪攒钱目标。
+<p align="center">
+  <strong>专为个人日常设计的理财记账与攒钱资产管理系统</strong>
+  <br>
+  <span>Web 全功能在线版 + Android 纯离线脱机版，告别数据焦虑，掌控个人现金流</span>
+</p>
 
-第一阶段开发适配手机和电脑浏览器的网站；后续可增加 PWA 安装体验，让网站可以从手机桌面打开。原生 Android / iOS App 暂不属于第一阶段。
+<p align="center">
+  <img src="https://img.shields.io/badge/Spring%20Boot-3.3.4-brightgreen.svg" alt="Spring Boot">
+  <img src="https://img.shields.io/badge/Java-17-blue.svg" alt="Java 17">
+  <img src="https://img.shields.io/badge/Vue.js-3.x-4fc08d.svg" alt="Vue 3">
+  <img src="https://img.shields.io/badge/TypeScript-5.x-blue.svg" alt="TypeScript">
+  <img src="https://img.shields.io/badge/SQLite-Offline-orange.svg" alt="SQLite">
+  <img src="https://img.shields.io/badge/MySQL-8.0+-blue.svg" alt="MySQL">
+  <img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License">
+</p>
 
-> 当前状态：需求与工程规划，尚未创建前后端代码、数据库或部署环境。本文中的功能、目录、配置和启动命令均为计划约定，不能视为已经实现或验收通过。
->
-> 技术栈已确认 Vue 3 + TypeScript、Java + Spring Boot、MySQL
+---
 
-## Scope · 项目范围
+## 💡 项目简介
 
-### 第一阶段：完成记账与攒钱闭环
+**MoneyDay** 是一款兼顾日常收支流水、自定义账单周期、强制储蓄规划与负债管理的个人资产工具。不同于市面上依赖云端托管和繁琐广告的记账软件，MoneyDay 坚持**隐私第一、资产托底、逻辑闭环**：
 
-| 模块 | 计划功能 | 范围约定 |
-| --- | --- | --- |
-| 登录与个人设置 | 登录、退出、修改密码、时区设置 | 初期个人自用，不开放公众注册；不提供固定默认密码 |
-| 收支记账 | 新增、编辑、删除收入与支出，记录金额、日期、分类、账户和备注 | 以手动录入为主；删除与修改同步修正余额和统计 |
-| 账户管理 | 现金、银行卡、电子钱包等账户，期初余额、当前余额、账户间转账 | 账户表示手动维护的账本，不连接银行或支付平台 |
-| 分类管理 | 收入分类、支出分类和自定义分类 | 已使用的分类可停用；避免删除后历史记录失去分类 |
-| 月度预算 | 设置每月总支出预算，展示已花、剩余和超支情况 | 首期只做总预算，按分类预算留到后续 |
-| 攒钱目标 | 设置名称、目标金额、可选截止日期，记录存入与取出，查看进度 | 记录目标资金分配，不提供实际转账或理财服务 |
-| 首页与统计 | 本月收入、支出、结余、账户总余额、预算进度、分类占比、月度趋势 | 所有统计来自实际记录；空数据展示空状态 |
+- **双端支持**：既有功能完备、大屏可视化的 **Web 端**，也有开箱即用、完全不依赖服务器的 **Android 纯离线移动端**。
+- **打破自然月限制**：支持任意自定义账单周期（如发薪日 10 号为起算日），结余与预算更贴合真实生活节奏。
+- **严谨记账哲学**：区分“心愿单”与“长期资产目标”，引入“可用净资产”和“负债分期代扣”，避免盲目储蓄导致的资金透支。
 
-### 后续可扩展
+---
 
-- PWA：手机桌面安装与独立窗口打开；离线记账需要单独设计同步和冲突处理。
-- 定期记账、分类预算、提醒与账单导入。
-- 多用户注册或家庭共享账本，另行确认成员权限和数据隔离规则。
+## ✨ 核心特性
 
-### 第一阶段不包含
+### 1. 双端运行形态
+- **Web 全功能版** (`frontend` + `backend`)：
+  - 基于 Spring Boot 3 + MyBatis-Plus + Vue 3 + Ant Design Vue 构建；
+  - 拥有完整的收支看板、月度与历史趋势图表、全局多账户联动。
+- **Android 纯离线脱机版** (`android-frontend`)：
+  - 基于 Vue 3 + Vant 4 + Capacitor + 本地 SQLite 构建；
+  - **飞行模式 / 无网络状态秒级响应**，无需启动后端服务器或数据库；
+  - 所有数据存储在手机本地私有沙箱中，私密安全，关机不丢失。
 
-银行 / 微信 / 支付宝自动抓取、支付与真实资金托管、证券交易、投资建议、复杂信用卡账期、多币种汇率换算、微服务和原生移动 App。
+### 2. 灵活账单周期与快照机制
+- 支持自定义起始日（如每月 10 号至次月 9 号为一个账单周期）；
+- 引入**周期快照 (Cycle Snapshot)**：固存金额与预期固收在周期首次访问时自动继承固化，历史账期参数变更互不干扰。
 
-## Accounting Rules · 记账规则
+### 3. 真实资金闭环与强制储蓄
+- **固存 (Fixed Deposit)**：在周期开始时设定强制储蓄额，真实结余公式：`结余 = 收入 - 固存 - 支出`，确保每月先存后花。
+- **周期固收 (Cycle Fixed Income)**：支持薪资一键确认到账生成流水，具备防重复记账机制。
 
-- 默认币种暂定人民币 CNY，首期只使用一种币种；默认时区暂定 `Asia/Shanghai`，待确认。
-- 金额使用后端 `BigDecimal` 与数据库 `DECIMAL(18,2)`；接口以十进制字符串传递金额，避免浮点误差。普通收支金额必须大于零，输入超过两位小数时明确拒绝，不静默舍入。
-- 收入增加账户余额，支出减少账户余额。期初余额不计入当月收入；当前余额由期初余额和账户流水计算。
-- 账户间转账同时记录转出与转入，并在同一事务中完成；不计入收入、支出或月度预算。
-- 月度结余 = 当月收入 − 当月支出；账户总余额包含历史积累，与月度结余分开展示。
-- 月度预算按记账日期所在月份汇总支出，账户转账和目标分配不消耗预算。
-- 攒钱目标表示现有资金的用途分配。为目标存入 500 元，不会凭空增加总资产，也不重复计为支出；取出仅减少目标已分配金额。
-- 目标资金必须关联账户；同一账户各目标的已分配金额合计不得超过其余额。会导致超额分配的支出、转账或历史记录修改应明确提示，先调整目标分配再保存。
-- 一笔记录的新增、修改、删除与相关余额、预算和目标校验必须一致完成；失败时回滚，不允许只更新部分数据。
-- 有历史流水的账户采用停用处理，保留历史记录；停用前应处理余额及目标分配。
+### 4. 心愿单 vs 长期目标双轨驱动
+- **心愿单 (Wishlist)**：非刚性消费（如数码产品、旅游），由全局累计结余池提供进度与预计达成天数，超支时智能软预警。
+- **长期资产目标 (Long-term Target)**：大额资产沉淀（如买车买房储备），由**可用净资产**真实托底，存钱速度按每周期净结余科学推算。
 
-## Technical Scope · 技术方案
+### 5. 透支负债与智能代扣引擎
+- 支持各类免息/计息分期（信用卡分期、花呗、白条等）；
+- 支持历史已还期数补录、提前还期与一键提前结清；
+- 内置定时任务调度引擎与启动自检补偿，还款日自动代扣并滚动下期。
 
-| 层次 | 计划方案 | 说明 |
-| --- | --- | --- |
-| 前端 | Vue 3、TypeScript、Vite、Vue Router、Pinia | 手机优先的响应式页面 |
-| UI 与图表 | Ant Design Vue、ECharts | 页面按个人记账场景精简 |
-| 后端 | Java 17、Spring Boot | 单应用，按账户、记账、预算、目标划分业务包 |
-| 数据访问 | MyBatis、MySQL | SQL 与数据库迁移脚本纳入版本管理 |
-| 会话 | 模拟随机验证码 + 随机token + redis | 引入 Redis 方式 |
-| 发布物 | 前端静态资源 + 后端可执行 JAR | 使用嵌入式服务器 |
+---
 
-具体 Spring Boot、Vite 及其他依赖版本在工程初始化时确认兼容性，再固定到构建文件与锁文件。参考文件中的版本号不直接作为本项目依赖版本。
+## 🛠️ 技术栈
 
-## Required Tools · 本机环境
+| 模块 | 技术选型 | 说明 |
+| :--- | :--- | :--- |
+| **后端 (Backend)** | Java 17, Spring Boot 3.3.4 | 核心 RESTful API 业务服务 |
+| | MyBatis-Plus 3.5.7, MySQL 8.0+ | 数据持久化与数据库交互 |
+| **Web 前端 (Frontend)** | Vue 3, Vite, TypeScript | 桌面端与浏览器适配响应式界面 |
+| | Ant Design Vue, ECharts, Pinia | UI 组件库与统计图表呈现 |
+| **移动端 (Android)** | Vue 3, Vant 4, TypeScript | 移动端触屏体验与交互适配 |
+| | Capacitor 8, Capacitor Community SQLite | 跨平台移动运行时与原生 SQLite 离线存储 |
 
-以下是 2026-10-10 在本机 PowerShell 的 PATH 中实际查询到的结果，不代表 IDEA、Docker 或远程服务使用相同版本。
+---
 
-| 工具 | 本机检测结果 | 项目处理方式 |
-| --- | --- | --- |
-| Java | 17.0.20.1 | 计划以 Java 17 为基线；初始化时核对 IDEA Project SDK 与 Maven 使用的 JDK |
-| Maven | 3.6.3 | 已检测到；能否满足最终依赖组合待确认，初始化时固定 Maven Wrapper 版本 |
-| Node.js | 24.9.0 | 已检测到；最终以选定 Vite 的要求为准 |
-| MySQL 客户端 | 8.0.46 | 客户端版本已检测；服务端版本、运行状态和连接配置待确认 |
-| Redis 服务程序 | 8.10.1 | 命令可用；不代表服务正在运行，首期是否使用尚未确定 |
-
-### 如何查询本机版本
-
-在 PowerShell 中逐条运行：
-
-```powershell
-java -version
-javac -version
-mvn -version
-node --version
-npm --version
-mysql --version
-redis-server --version
-git --version
-```
-
-如果提示找不到命令，可能是未安装，也可能是未加入 PATH。可检查命令位置：
-
-```powershell
-Get-Command java, javac, mvn, node, npm, mysql, redis-server, git -ErrorAction SilentlyContinue |
-    Select-Object Name, Source
-```
-
-IDEA 中还需检查 **File → Project Structure → Project SDK**，以及 **Settings → Build Tools → Maven** 的 Maven 路径和 Runner JRE；终端的版本不保证与 IDEA 配置相同。
-
-### 查询 MySQL 服务端版本
-
-下面的命令需要 MySQL 已启动，以及有效的连接信息。将占位值替换为本机配置；`-p` 会交互式询问密码，不要把密码直接写在命令中：
-
-```powershell
-mysql -h <数据库主机> -P <数据库端口> -u <数据库用户名> -p -e "SELECT VERSION();"
-```
-
-## Project Layout · 计划目录
-
-下列目录尚未创建，将在工程初始化阶段落地：
+## 📂 目录结构
 
 ```text
 MoneyDay/
-├─ README.md
-├─ frontend/                  # Vue 前端
-│  └─ src/
-├─ backend/                   # Spring Boot 后端
-│  └─ src/main/
-│     ├─ java/                 # 按业务包组织
-│     └─ resources/
-│        └─ db/migration/      # 数据库迁移脚本
-└─ deploy/                    # 部署与备份恢复说明
+├── backend/                  # Spring Boot 后端工程
+│   ├── src/main/java/        # 后端业务源码
+│   └── src/main/resources/   # 配置文件与数据库 schema.sql
+├── frontend/                 # Web 前端工程 (Vue 3 + Ant Design Vue)
+│   ├── src/                  # 页面、组件与 Pinia Store
+│   └── vite.config.ts        # Vite 开发服务器与代理配置
+├── android-frontend/         # Android 离线移动端工程 (Vue 3 + Vant 4 + Capacitor)
+│   ├── src/                  # 触屏端业务源码与 SQLite DAO 封装
+│   └── android/              # Capacitor 生成的原生 Android Studio 工程
+├── CONTEXT.md                # 核心业务领域模型与术语约定
+├── CONTRIBUTING.md           # 代码贡献与提交规范
+└── LICENSE                   # MIT 开源许可证
 ```
 
-## Local Development · 计划启动方式
+---
 
-> 以下命令是未来工程的启动约定。目前没有 `frontend`、`backend`、`package.json` 或 Maven 工程，暂时不能执行这些启动命令。
+## 🚀 快速上手
 
-### 启动后端
+### 1. 数据库初始化 (Web/后端版)
 
-完成数据库初始化和外部配置后，在 IDEA终端 中执行：
+确保已安装 **MySQL 8.0+** 并启动服务：
 
+```sql
+CREATE DATABASE IF NOT EXISTS `moneyday` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ```
-cd D:\IDEAProjects\MoneyDay\backend
-$env:SPRING_PROFILES_ACTIVE="dev,local"; bash app.sh start
-```
 
-计划后端地址为 `http://localhost:8080`，API 前缀为 `/api`。
+导入核心数据库结构与初始化预置数据：
+- 脚本位置：[`backend/src/main/resources/schema.sql`](backend/src/main/resources/schema.sql)
 
-### 启动前端
+### 2. 启动后端服务
 
-另开一个 IDEA终端 窗口：
+1. 进入 `backend/src/main/resources/` 目录，复制示例配置：
+   ```bash
+   cp backend/src/main/resources/application-local.yml.example backend/src/main/resources/application-local.yml
+   ```
+2. 编辑 `application-local.yml` 中的数据库账号和密码。
+3. 编译并启动服务：
+   ```bash
+   cd backend
+   mvn spring-boot:run
+   ```
+   后端服务将默认运行在 `http://localhost:8080`。
 
-```
-cd D:\IDEAProjects\MoneyDay\frontend
+### 3. 启动 Web 前端
+
+打开新终端窗口：
+
+```bash
+cd frontend
+npm install
 npm run dev
 ```
 
-计划前端地址为 `http://localhost:5173`，开发代理将 `/api` 转发至后端。手机访问需要另行配置局域网监听、防火墙与 API 访问方式，不能直接使用手机上的 `localhost` 连接电脑。
+在浏览器中访问 `http://localhost:5173` 即可开始使用。
 
+---
 
-## Build · 计划构建方式
+### 4. 运行 Android 纯离线脱机版
 
-工程建立后，分别执行：
+Android 端支持在手机上脱机独立运行（无需启动后端及 MySQL）：
 
-```powershell
-cd D:\IDEAProjects\MoneyDay\frontend
-npm run build
+1. **安装依赖与构建资源**：
+   ```bash
+   cd android-frontend
+   npm install
+   npm run build
+   npx cap sync android
+   ```
+2. **构建与运行 APK**：
+   - **方式一（推荐）**：使用 **Android Studio** 打开 `android-frontend/android` 目录，点击 `Build` -> `Build Bundle(s) / APK(s)` -> `Build APK(s)`，生成的安装包位于 `android/app/build/outputs/apk/debug/app-debug.apk`。
+   - **方式二（命令行）**：
+     ```bash
+     cd android-frontend/android
+     ./gradlew assembleDebug
+     ```
+3. 将生成的 APK 安装到手机，首次打开会自动初始化本地 SQLite 数据库，离线立即可用。详细步骤可参阅 [Android 打包指引文档](android-frontend/android/README.md)。
+
+---
+
+## 📖 核心概念与设计约定
+
+在开发或使用 MoneyDay 之前，建议先阅读 **[CONTEXT.md](CONTEXT.md)**，了解项目的核心设计哲学：
+- **全局目标透支 (Global Target Overdraft)**：资产由全账户统一托底，避免因目标冻结资金导致误拦截记账。
+- **可用净资产 (Available Net Assets)**：`所有账户总资产 - 所有未结清负债待还总额`。
+- **透支负债 (Liability / Overdraft)**：消费分期的防重代扣、还款日自动顺延与提前结清逻辑。
+
+---
+
+## 🤝 参与贡献
+
+欢迎提交 Issue 或 Pull Request！在开始之前，请阅读 [CONTRIBUTING.md](CONTRIBUTING.md)。
+
+本项目严格遵循规范的 Git Commit 消息格式：
+```text
+<type>: <中文描述>
 ```
+例如：
+- `feat: 支持按分类导出 CSV 账单`
+- `fix: 修复账单周期跨月时结余统计偶发负值的问题`
 
-```powershell
-cd D:\IDEAProjects\MoneyDay\backend
-.\mvnw.cmd clean verify
-```
+---
 
-计划输出为 `frontend/dist/` 与 `backend/target/` 下的可执行 JAR。初期部署采用单实例，前端与 `/api` 由同一入口提供服务。具体部署位置和反向代理方案待确认。
+## 📄 开源许可证
+
+本项目基于 [MIT License](LICENSE) 开源。

@@ -23,8 +23,8 @@
 ### 方式一：通过 Android Studio 一键打包（推荐）
 
 1. 启动 **Android Studio**；
-2. 选择 **Open**（打开已有项目），选择目录：
-   `d:\IDEAProjects\MoneyDay\android-frontend\android`
+2. 选择 **Open**（打开已有项目），选择项目下的目录：
+   `android-frontend/android`
 3. 首次打开会自动下载 Gradle Wrapper 及 Android SDK 依赖（请确保网络畅通）；
 4. 同步完成后，在顶部菜单栏依次点击：
    **`Build`** -> **`Build Bundle(s) / APK(s)`** -> **`Build APK(s)`**；
@@ -38,7 +38,7 @@
 
 若已配置好 `ANDROID_HOME` 环境变量：
 ```bash
-cd d:\IDEAProjects\MoneyDay\android-frontend\android
+cd android-frontend/android
 
 # Windows PowerShell:
 .\gradlew assembleDebug

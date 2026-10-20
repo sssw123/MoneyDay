@@ -1,9 +1,6 @@
 spring:
-  datasource:
-    url: jdbc:mysql://localhost:3306/moneyday?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
-    username: root
-    password: "011008"
-    driver-class-name: com.mysql.cj.jdbc.Driver
+  profiles:
+    active: local
   jackson:
     time-zone: Asia/Shanghai
 
