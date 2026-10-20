@@ -1,20 +1,20 @@
 <template>
-  <div>
+  <div class="business-page">
     <!-- 顶部数据汇总 -->
-    <a-row :gutter="16" style="margin-bottom: 24px;">
-      <a-col :span="8">
+    <a-row :gutter="[16, 16]" style="margin-bottom: 24px;">
+      <a-col :xs="24" :md="12" :xl="8">
         <a-card title="未结清总负债 (待还总额)">
-          <h2 style="color: #ff4d4f; margin-bottom: 4px;">¥{{ totalRemainingLiabilities }}</h2>
+          <h2 style="color: #C94747; margin-bottom: 4px;">¥{{ totalRemainingLiabilities }}</h2>
           <div style="font-size: 13px; color: #999;">锁定未来现金流流出</div>
         </a-card>
       </a-col>
-      <a-col :span="8">
+      <a-col :xs="24" :md="12" :xl="8">
         <a-card title="还款中分期笔数">
           <h2 style="color: #1890ff; margin-bottom: 4px;">{{ activeCount }} 笔</h2>
           <div style="font-size: 13px; color: #999;">按月履约中消费分期</div>
         </a-card>
       </a-col>
-      <a-col :span="8">
+      <a-col :xs="24" :md="12" :xl="8">
         <a-card title="本月应还分期总额">
           <h2 style="color: #fa8c16; margin-bottom: 4px;">¥{{ monthlyDueTotal }}</h2>
           <div style="font-size: 13px; color: #999;">已自动纳入周期固定支出</div>
@@ -23,7 +23,7 @@
     </a-row>
 
     <!-- 操作工具栏 -->
-    <div style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+    <div class="page-toolbar">
       <a-space wrap>
         <a-button type="primary" @click="showAddModal">录入新分期</a-button>
         <span style="font-size: 13px; color: #666; margin-left: 8px;">
@@ -33,7 +33,7 @@
     </div>
 
     <!-- 分期负债列表 -->
-    <a-table :dataSource="liabilities" :columns="columns" rowKey="id">
+    <a-table :scroll="{ x: 'max-content' }" :dataSource="liabilities" :columns="columns" rowKey="id">
       <template #bodyCell="{ column, record }">
         <template v-if="column.key === 'status'">
           <a-tag :color="record.status === 'SETTLED' ? 'green' : 'blue'">
@@ -44,7 +44,7 @@
           ¥{{ record.principal }}
         </template>
         <template v-else-if="column.key === 'remainingAmount'">
-          <span :style="{ color: record.status === 'SETTLED' ? '#999' : '#ff4d4f', fontWeight: 'bold' }">
+          <span :style="{ color: record.status === 'SETTLED' ? '#999' : '#C94747', fontWeight: 'bold' }">
             ¥{{ record.remainingAmount }}
           </span>
         </template>
@@ -62,7 +62,7 @@
         </template>
         <template v-else-if="column.key === 'nextRepaymentDate'">
           <span v-if="record.status === 'SETTLED'" style="color: #999;">-</span>
-          <span v-else style="color: #722ed1; font-weight: 500;">
+          <span v-else style="color: #557344; font-weight: 500;">
             {{ record.nextRepaymentDate || '待排期' }}
           </span>
         </template>
@@ -81,10 +81,10 @@
               <a-button type="primary" size="small" @click="showRepayModal(record)">
                 还款
               </a-button>
-              <a @click="editLiability(record)">编辑</a>
+              <a-button type="link" size="small" @click="editLiability(record)">编辑</a-button>
             </template>
             <a-popconfirm title="确定删除该分期吗？历史已生成的扣款流水将继续保留" @confirm="deleteLiability(record.id)">
-              <a style="color: red">删除</a>
+              <a-button type="link" size="small" danger>删除</a-button>
             </a-popconfirm>
           </a-space>
         </template>
@@ -154,7 +154,7 @@
         <div style="font-size: 13px; color: #666; margin-bottom: 4px;">
           总期数：{{ repayRecord.totalPeriods }} 期 | 已还：{{ repayRecord.currentPeriod }} 期 | <b>待还剩余：{{ repayRecord.remainingPeriods }} 期</b>
         </div>
-        <div style="font-size: 13px; color: #722ed1;">
+        <div style="font-size: 13px; color: #557344;">
           下一次计划还款日：<b>{{ repayRecord.nextRepaymentDate || '待排期' }}</b>
         </div>
       </div>
@@ -211,10 +211,10 @@ const expenseCategories = ref<any[]>([]);
 const columns = [
   { title: '状态', key: 'status', width: 90 },
   { title: '分期名称', dataIndex: 'name', key: 'name' },
-  { title: '本金', key: 'principal' },
-  { title: '剩余待还', key: 'remainingAmount' },
+  { title: '本金', key: 'principal', align: 'right' as const },
+  { title: '剩余待还', key: 'remainingAmount', align: 'right' as const },
   { title: '还款进度', key: 'progress', width: 220 },
-  { title: '每期应还', key: 'periodAmount' },
+  { title: '每期应还', key: 'periodAmount', align: 'right' as const },
   { title: '下期还款日', key: 'nextRepaymentDate', width: 120 },
   { title: '还款日', key: 'repaymentDay' },
   { title: '默认账户', key: 'defaultAccount' },

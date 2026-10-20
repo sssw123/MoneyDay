@@ -1,11 +1,11 @@
 <template>
-  <div>
-    <div style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+  <div class="business-page">
+    <div class="page-toolbar">
       <a-space wrap>
         <a-button type="primary" @click="showAddModal">新增心愿</a-button>
         <span style="font-size: 14px; color: #666; margin-left: 8px;">
           当前全局累计结余池 (心愿标尺):
-          <b :style="{ color: cumulativeBalance >= 0 ? '#52c41a' : '#ff4d4f', fontSize: '16px' }">
+          <b :style="{ color: cumulativeBalance >= 0 ? '#477824' : '#C94747', fontSize: '16px' }">
             ¥{{ cumulativeBalance }}
           </b>
         </span>
@@ -15,7 +15,7 @@
       </a-space>
     </div>
 
-    <a-table :dataSource="wishlists" :columns="columns" rowKey="id">
+    <a-table :scroll="{ x: 'max-content' }" :dataSource="wishlists" :columns="columns" rowKey="id">
       <template #bodyCell="{ column, record }">
         <template v-if="column.key === 'isRealized'">
           <a-tag :color="record.isRealized === 1 ? 'green' : 'pink'">
@@ -27,7 +27,7 @@
         </template>
         <template v-else-if="column.key === 'progress'">
           <a-progress :percent="record.progress || 0"
-                      :stroke-color="record.isRealized === 1 ? '#52c41a' : '#eb2f96'"
+                      :stroke-color="record.isRealized === 1 ? '#477824' : '#A36678'"
                       :status="(record.progress || 0) >= 100 ? 'success' : 'active'" />
         </template>
         <template v-else-if="column.key === 'estimatedCompletionDate'">
@@ -44,7 +44,7 @@
             </a-tag>
           </a-tooltip>
           <a-tooltip v-else :title="record.estimatedReason">
-            <span style="color: #eb2f96; font-weight: 500;">
+            <span style="color: #A36678; font-weight: 500;">
               {{ record.estimatedCompletionDate }}
             </span>
           </a-tooltip>
@@ -56,7 +56,7 @@
                 <a-button
                   type="primary"
                   size="small"
-                  :style="cumulativeBalance < record.targetAmount ? { background: '#eb2f96', borderColor: '#eb2f96' } : {}"
+                  :style="cumulativeBalance < record.targetAmount ? { background: '#A36678', borderColor: '#A36678' } : {}"
                   @click="showRealizeModal(record)">
                   实现心愿
                 </a-button>
@@ -64,12 +64,12 @@
             </template>
             <template v-else>
               <a-popconfirm title="确定撤销该心愿的实现状态吗？扣款流水将被删除并退回账户余额" @confirm="handleUnrealize(record)">
-                <a style="color: #ff4d4f">撤销</a>
+                <a-button type="link" size="small" style="color: #C94747">撤销</a-button>
               </a-popconfirm>
             </template>
-            <a @click="editWishlist(record)">编辑</a>
+            <a-button type="link" size="small" @click="editWishlist(record)">编辑</a-button>
             <a-popconfirm title="确定删除吗？" @confirm="deleteWishlist(record.id)">
-              <a style="color: red">删除</a>
+              <a-button type="link" size="small" danger>删除</a-button>
             </a-popconfirm>
           </a-space>
         </template>
@@ -129,7 +129,7 @@ const cumulativeBalance = ref(0);
 const columns = [
   { title: '状态', key: 'isRealized', width: 90 },
   { title: '心愿名称', dataIndex: 'name', key: 'name' },
-  { title: '心愿金额', key: 'targetAmount' },
+  { title: '心愿金额', key: 'targetAmount', align: 'right' as const },
   { title: '立项时间', dataIndex: 'startDate', key: 'startDate' },
   { title: '结余进度', key: 'progress' },
   { title: '预计达成时间', key: 'estimatedCompletionDate' },

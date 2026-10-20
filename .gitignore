@@ -42,3 +42,4 @@ application-local.properties
 !application-local.yml.example
 
 
+/.trellis/

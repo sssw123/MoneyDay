@@ -1,10 +1,10 @@
 <template>
-  <div>
-    <div style="margin-bottom: 16px;">
+  <div class="business-page">
+    <div class="page-toolbar">
       <a-button type="primary" @click="showModal">新增分类</a-button>
     </div>
     
-    <a-table :dataSource="categories" :columns="columns" rowKey="id">
+    <a-table :scroll="{ x: 'max-content' }" :dataSource="categories" :columns="columns" rowKey="id">
       <template #bodyCell="{ column, record }">
         <template v-if="column.key === 'type'">
           <a-tag :color="record.type === 1 ? 'green' : 'red'">
@@ -12,13 +12,13 @@
           </a-tag>
         </template>
         <template v-else-if="column.key === 'isActive'">
-          <a-switch :checked="record.isActive === 1" @change="(val: boolean | string | number) => toggleActive(record, !!val)" />
+          <a-switch :aria-label="`启用分类：${record.name}`" :checked="record.isActive === 1" @change="(val: boolean | string | number) => toggleActive(record, !!val)" />
         </template>
         <template v-else-if="column.key === 'action'">
           <a-space>
-            <a @click="editCategory(record)">编辑</a>
+            <a-button type="link" size="small" @click="editCategory(record)">编辑</a-button>
             <a-popconfirm title="确定删除吗？" @confirm="deleteCategory(record.id)">
-              <a style="color: red">删除</a>
+              <a-button type="link" size="small" danger>删除</a-button>
             </a-popconfirm>
           </a-space>
         </template>

@@ -1,10 +1,10 @@
 <template>
-  <div style="padding: 24px;">
+  <div class="business-page">
     <a-card title="账单周期模板">
-      <div style="margin-bottom: 16px;">
+      <div class="page-toolbar">
         <a-button type="primary" @click="showModal">新增模板</a-button>
       </div>
-      <a-table :dataSource="templates" :columns="columns" rowKey="id">
+      <a-table :scroll="{ x: 'max-content' }" :dataSource="templates" :columns="columns" rowKey="id">
         <template #bodyCell="{ column, record }">
           <template v-if="column.key === 'startDay'">
             {{ record.startDay === 31 ? '月末' : record.startDay + '号' }}
@@ -24,10 +24,10 @@
           </template>
           <template v-else-if="column.key === 'action'">
             <a-space>
-              <a v-if="record.isDefault !== 1" @click="setDefault(record.id)">设为默认</a>
-              <a @click="editTemplate(record)">编辑</a>
+              <a-button type="link" size="small" v-if="record.isDefault !== 1" @click="setDefault(record.id)">设为默认</a-button>
+              <a-button type="link" size="small" @click="editTemplate(record)">编辑</a-button>
               <a-popconfirm title="确定删除吗？" @confirm="deleteTemplate(record.id)">
-                <a style="color: red">删除</a>
+                <a-button type="link" size="small" danger>删除</a-button>
               </a-popconfirm>
             </a-space>
           </template>
@@ -44,7 +44,7 @@
           <a-input-number v-model:value="formState.startDay" :min="1" :max="31" style="width: 100%" />
         </a-form-item>
         <a-form-item label="固定项目标签" help="设置该周期下每月固定的收支和存款计划">
-          <div v-for="(item, index) in formState.fixedItems" :key="index" style="display: flex; gap: 8px; margin-bottom: 8px; align-items: center;">
+          <div v-for="(item, index) in formState.fixedItems" :key="index" class="fixed-item-row">
             <a-select v-model:value="item.type" style="width: 100px" @change="() => { item.categoryId = null; item.categoryName = ''; }">
               <a-select-option value="INCOME">固收</a-select-option>
               <a-select-option value="EXPENSE">固支</a-select-option>

@@ -1,16 +1,16 @@
 <template>
-  <div>
-    <div style="margin-bottom: 16px;">
+  <div class="business-page">
+    <div class="page-toolbar">
       <a-button type="primary" @click="showModal">新增账户</a-button>
     </div>
     
-    <a-table :dataSource="accounts" :columns="columns" rowKey="id">
+    <a-table :scroll="{ x: 'max-content' }" :dataSource="accounts" :columns="columns" rowKey="id">
       <template #bodyCell="{ column, record }">
         <template v-if="column.key === 'action'">
           <a-space>
-            <a @click="editAccount(record)">编辑</a>
+            <a-button type="link" size="small" @click="editAccount(record)">编辑</a-button>
             <a-popconfirm title="确定删除吗？" @confirm="deleteAccount(record.id)">
-              <a style="color: red">删除</a>
+              <a-button type="link" size="small" danger>删除</a-button>
             </a-popconfirm>
           </a-space>
         </template>
@@ -59,7 +59,7 @@ const formState = ref({
 const columns = [
   { title: '账户名称', dataIndex: 'name', key: 'name' },
   { title: '类型', dataIndex: 'type', key: 'type' },
-  { title: '当前余额', dataIndex: 'currentBalance', key: 'currentBalance' },
+  { title: '当前余额', dataIndex: 'currentBalance', key: 'currentBalance', align: 'right' as const },
   { title: '操作', key: 'action' }
 ];
 

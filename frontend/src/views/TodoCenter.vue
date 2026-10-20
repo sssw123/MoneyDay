@@ -1,15 +1,6 @@
 <template>
-  <div>
-    <div style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
-      <div>
-        <h2 style="margin: 0; font-weight: 600; display: flex; align-items: center; gap: 8px;">
-          <span>待办中心</span>
-          <a-badge v-if="pendingCount > 0" :count="pendingCount" />
-        </h2>
-        <div style="color: #888; font-size: 13px; margin-top: 4px;">
-          主动财务管家 · 自动化履约巡检 · 异常扣款告警与心愿触达
-        </div>
-      </div>
+  <div class="business-page">
+    <div class="page-toolbar">
       <a-radio-group v-model:value="statusFilter" button-style="solid" @change="fetchTodos">
         <a-radio-button value="PENDING">待处理 ({{ pendingCount }})</a-radio-button>
         <a-radio-button value="RESOLVED">已完成</a-radio-button>
@@ -32,9 +23,9 @@
           :bordered="true"
           :style="getCardStyle(item)"
         >
-          <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+          <div class="todo-card-content">
             <div style="flex: 1;">
-              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+              <div class="todo-card-title">
                 <a-tag :color="getTypeTagColor(item.type)">
                   {{ getTypeName(item.type) }}
                 </a-tag>
@@ -55,7 +46,7 @@
             </div>
 
             <!-- 操作按钮区 (仅 PENDING 状态显示核心操作) -->
-            <div v-if="item.status === 'PENDING'" style="display: flex; align-items: center; gap: 8px; margin-left: 16px;">
+            <div v-if="item.status === 'PENDING'" class="todo-actions">
               <!-- 分期扣款失败: 立即补扣 -->
               <template v-if="item.type === 'LIABILITY_OVERDUE'">
                 <a-button type="primary" danger size="small" @click="openRetryModal(item)">
@@ -78,7 +69,7 @@
 
               <!-- 心愿达成: 立即兑现 / 暂不兑现 -->
               <template v-else-if="item.type === 'WISHLIST_REACHED'">
-                <a-button type="primary" style="background: #52c41a; border-color: #52c41a;" size="small" @click="openRealizeModal(item)">
+                <a-button type="primary" style="background: #477824; border-color: #477824;" size="small" @click="openRealizeModal(item)">
                   🎉 立即兑现
                 </a-button>
                 <a-button size="small" @click="dismissTodo(item.id)">
@@ -112,7 +103,7 @@
     <a-modal v-model:open="realizeModalVisible" title="实现心愿" @ok="handleRealizeOk">
       <div v-if="currentTodo" style="margin-bottom: 16px;">
         <p style="margin-bottom: 6px;"><b>达成心愿：</b>{{ currentTodo.title }}</p>
-        <p style="color: #52c41a; font-size: 13px;">{{ currentTodo.content }}</p>
+        <p style="color: #477824; font-size: 13px;">{{ currentTodo.content }}</p>
       </div>
       <a-form :label-col="{ span: 6 }" :wrapper-col="{ span: 16 }">
         <a-form-item label="扣款账户" required help="心愿达成将从该账户划扣资金并生成支出流水">
@@ -193,10 +184,10 @@ const getCardStyle = (item: any) => {
     return { opacity: '0.65', background: '#fafafa' };
   }
   if (item.type === 'LIABILITY_OVERDUE') {
-    return { borderLeft: '4px solid #ff4d4f', background: '#fff2f0' };
+    return { borderLeft: '4px solid #C94747', background: '#fff2f0' };
   }
   if (item.type === 'WISHLIST_REACHED') {
-    return { borderLeft: '4px solid #52c41a', background: '#f6ffed' };
+    return { borderLeft: '4px solid #477824', background: '#f6ffed' };
   }
   return { borderLeft: '4px solid #1890ff', background: '#e6f7ff' };
 };

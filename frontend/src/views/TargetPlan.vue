@@ -1,11 +1,11 @@
 <template>
-  <div>
-    <div style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+  <div class="business-page">
+    <div class="page-toolbar">
       <a-space wrap>
         <a-button type="primary" @click="showTargetModal">新增目标</a-button>
         <span style="font-size: 14px; color: #666; margin-left: 8px;">
           可用净资产 (总资产 - 待还负债):
-          <b :style="{ color: availableNetAssets >= 0 ? '#722ed1' : '#ff4d4f', fontSize: '16px' }">
+          <b :style="{ color: availableNetAssets >= 0 ? '#557344' : '#C94747', fontSize: '16px' }">
             ¥{{ availableNetAssets }}
           </b>
         </span>
@@ -15,14 +15,14 @@
       </a-space>
     </div>
 
-    <a-table :dataSource="targets" :columns="targetColumns" rowKey="id">
+    <a-table :scroll="{ x: 'max-content' }" :dataSource="targets" :columns="targetColumns" rowKey="id">
       <template #bodyCell="{ column, record }">
         <template v-if="column.key === 'targetAmount'">
           ¥{{ record.targetAmount }}
         </template>
         <template v-else-if="column.key === 'progress'">
           <a-progress :percent="record.progress || 0"
-                      :stroke-color="record.isRealized === 1 ? '#52c41a' : '#722ed1'"
+                      :stroke-color="record.isRealized === 1 ? '#477824' : '#557344'"
                       :status="(record.progress || 0) >= 100 ? 'success' : 'active'" />
         </template>
         <template v-else-if="column.key === 'estimatedCompletionDate'">
@@ -39,7 +39,7 @@
             </a-tag>
           </a-tooltip>
           <a-tooltip v-else :title="record.estimatedReason">
-            <span style="color: #722ed1; font-weight: 500;">
+            <span style="color: #557344; font-weight: 500;">
               {{ record.estimatedCompletionDate }}
             </span>
           </a-tooltip>
@@ -64,12 +64,12 @@
             </template>
             <template v-else>
               <a-popconfirm title="确定撤销该目标的实现状态吗？扣款流水将被删除并退回账户余额" @confirm="handleUnrealize(record)">
-                <a style="color: #ff4d4f">撤销</a>
+                <a-button type="link" size="small" style="color: #C94747">撤销</a-button>
               </a-popconfirm>
             </template>
-            <a @click="editTarget(record)">编辑</a>
+            <a-button type="link" size="small" @click="editTarget(record)">编辑</a-button>
             <a-popconfirm title="确定删除吗？" @confirm="deleteTarget(record.id)">
-              <a style="color: red">删除</a>
+              <a-button type="link" size="small" danger>删除</a-button>
             </a-popconfirm>
           </a-space>
         </template>
@@ -121,7 +121,7 @@ const availableNetAssets = ref(0);
 const targetColumns = [
   { title: '状态', key: 'isRealized', width: 90 },
   { title: '目标名称', dataIndex: 'name', key: 'name' },
-  { title: '目标金额', key: 'targetAmount' },
+  { title: '目标金额', key: 'targetAmount', align: 'right' as const },
   { title: '立项时间', dataIndex: 'startDate', key: 'startDate' },
   { title: '净资产进度', key: 'progress' },
   { title: '预计实现时间', key: 'estimatedCompletionDate' },

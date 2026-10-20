@@ -1,13 +1,13 @@
 <template>
-  <div>
-    <div style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
+  <div class="business-page">
+    <div class="page-toolbar">
       <h3 style="margin: 0; font-weight: 600;">账单周期预算表</h3>
       <div style="color: #888; font-size: 13px;">
         打破自然月限制 · 固存强制储蓄 · 固收/固支自动联动
       </div>
     </div>
 
-    <a-table :dataSource="cycles" :columns="cycleColumns" rowKey="id" :pagination="false">
+    <a-table :scroll="{ x: 'max-content' }" :dataSource="cycles" :columns="cycleColumns" rowKey="id" :pagination="false">
       <template #bodyCell="{ column, record }">
         <template v-if="column.key === 'period'">
           {{ record.cycleStartDate }} 至 {{ record.cycleEndDate }}
@@ -29,7 +29,7 @@
           </a-space>
         </template>
         <template v-else-if="column.key === 'balance'">
-          <span :style="{ color: record.balance >= 0 ? 'green' : 'red', fontWeight: 'bold' }">
+          <span :style="{ color: record.balance >= 0 ? 'var(--positive)' : 'var(--negative)', fontWeight: 'bold' }">
             ¥{{ record.balance }}
           </span>
         </template>
@@ -71,9 +71,9 @@ const accounts = ref<any[]>([]);
 const cycleColumns = [
   { title: '周期区间', key: 'period' },
   { title: '固定项目', key: 'fixedItems' },
-  { title: '总收入', dataIndex: 'income', key: 'income' },
-  { title: '总支出', dataIndex: 'expense', key: 'expense' },
-  { title: '周期结余', key: 'balance' }
+  { title: '总收入', dataIndex: 'income', key: 'income', align: 'right' as const },
+  { title: '总支出', dataIndex: 'expense', key: 'expense', align: 'right' as const },
+  { title: '周期结余', key: 'balance', align: 'right' as const }
 ];
 
 // 项目记账相关

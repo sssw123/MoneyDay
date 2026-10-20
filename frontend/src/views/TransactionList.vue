@@ -1,10 +1,10 @@
 <template>
-  <div>
-    <div style="margin-bottom: 16px;">
+  <div class="business-page">
+    <div class="page-toolbar">
       <a-button type="primary" @click="showModal">记一笔</a-button>
     </div>
     
-    <a-table :dataSource="transactions" :columns="columns" rowKey="id">
+    <a-table :scroll="{ x: 'max-content' }" :dataSource="transactions" :columns="columns" rowKey="id">
       <template #bodyCell="{ column, record }">
         <template v-if="column.key === 'type'">
           <a-tag :color="getTypeColor(record.type)">
@@ -12,7 +12,7 @@
           </a-tag>
         </template>
         <template v-else-if="column.key === 'amount'">
-          <span :style="{ color: record.type === 2 ? 'red' : (record.type === 1 ? 'green' : 'blue') }">
+          <span :style="{ color: record.type === 2 ? 'var(--negative)' : (record.type === 1 ? 'var(--positive)' : '#48759A') }">
             {{ record.type === 2 ? '-' : (record.type === 1 ? '+' : '') }}{{ record.amount }}
           </span>
         </template>
@@ -25,9 +25,9 @@
         </template>
         <template v-else-if="column.key === 'action'">
           <a-space>
-            <a @click="editTransaction(record)">编辑</a>
+            <a-button type="link" size="small" @click="editTransaction(record)">编辑</a-button>
             <a-popconfirm title="确定删除这笔流水吗？余额将会自动恢复" @confirm="deleteTransaction(record.id)">
-              <a style="color: red">删除</a>
+              <a-button type="link" size="small" danger>删除</a-button>
             </a-popconfirm>
           </a-space>
         </template>
@@ -111,7 +111,7 @@ const columns = [
   { title: '类型', key: 'type' },
   { title: '分类', key: 'category' },
   { title: '账户', key: 'account' },
-  { title: '金额', key: 'amount' },
+  { title: '金额', key: 'amount', align: 'right' as const },
   { title: '备注', dataIndex: 'remark', key: 'remark' },
   { title: '操作', key: 'action' }
 ];

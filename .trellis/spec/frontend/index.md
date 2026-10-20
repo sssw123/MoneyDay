@@ -30,3 +30,7 @@
    - 移动端 `android-frontend` 采用纯本地 SQLite 存储与 TypeScript 领域服务层，具备脱机独立运行与 APK 打包能力。
    - 详见：[offline-mobile-architecture.md](file:///d:/IDEAProjects/MoneyDay/.trellis/spec/frontend/offline-mobile-architecture.md)。
 7. **Git 提交规范**: Commit 提交说明必须严格使用中文编写。格式要求为 `<type>: <中文简介>`（例如：`feat: 新增账单页面`, `docs: 更新前端组件文档`, `fix: 修复图表不刷新问题`）。
+
+## Web 展示与动效
+
+主题 tokens、共享导航、响应式布局、表格操作与按钮动效约定见 [component-guidelines.md](./component-guidelines.md#web-主题与响应式约定2026-10-20)。
