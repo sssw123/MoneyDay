@@ -8,7 +8,7 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.IdType;
 
 @TableName("account")
-public class Account {
+public class Account extends UserOwned {
     @TableId(type = IdType.AUTO)
     private Long id;
     private String name;

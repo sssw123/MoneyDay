@@ -151,10 +151,12 @@ const realizeRecord = ref<any>(null);
 const realizeAccountId = ref<number | null>(null);
 
 const fetchData = async () => {
-  wishlists.value = await request.get('/wishlists');
-  accounts.value = await request.get('/accounts');
-  const stats: any = await request.get('/stats');
-  cumulativeBalance.value = stats.cumulativeBalance || 0;
+  try {
+    wishlists.value = await request.get('/wishlists');
+    accounts.value = await request.get('/accounts');
+    const stats: any = await request.get('/stats');
+    cumulativeBalance.value = stats.cumulativeBalance || 0;
+  } catch { /* Shared request handling covers errors and discarded prior-user responses. */ }
 };
 
 const showAddModal = () => {

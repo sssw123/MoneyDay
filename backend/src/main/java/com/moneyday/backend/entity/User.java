@@ -11,7 +11,17 @@ public class User {
     @TableId(type = IdType.AUTO)
     private Long id;
     private String username;
+    @com.fasterxml.jackson.annotation.JsonIgnore
     private String password;
+    private String role;
+    private String status;
+    private Boolean mustChangePassword;
+    public String getRole() { return role; }
+    public void setRole(String role) { this.role = role; }
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
+    public Boolean getMustChangePassword() { return mustChangePassword; }
+    public void setMustChangePassword(Boolean value) { mustChangePassword = value; }
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 

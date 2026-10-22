@@ -64,7 +64,9 @@ const columns = [
 ];
 
 const fetchAccounts = async () => {
-  accounts.value = await request.get('/accounts');
+  try {
+    accounts.value = await request.get('/accounts');
+  } catch { /* Shared request handling covers errors and discarded prior-user responses. */ }
 };
 
 const showModal = () => {

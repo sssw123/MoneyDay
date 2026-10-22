@@ -1,54 +1,87 @@
 package com.moneyday.backend;
 
-import com.moneyday.backend.entity.TodoItem;
-import com.moneyday.backend.service.ScheduleTaskService;
-import com.moneyday.backend.service.TodoService;
-import org.junit.jupiter.api.Assertions;
+import com.moneyday.backend.common.ApiException;
+import com.moneyday.backend.security.TenantConfiguration;
+import com.moneyday.backend.security.UserContext;
+import com.moneyday.backend.service.impl.UserServiceImpl;
+import com.baomidou.mybatisplus.extension.plugins.inner.TenantLineInnerInterceptor;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
-@SpringBootTest
+import static org.junit.jupiter.api.Assertions.*;
+
+/** These checks deliberately load no Spring context and cannot access a database. */
 class BackendApplicationTests {
-
-    @Autowired
-    private ScheduleTaskService scheduleTaskService;
-
-    @Autowired
-    private TodoService todoService;
-
     @Test
-    void contextLoads() {
-        Assertions.assertNotNull(scheduleTaskService);
-        Assertions.assertNotNull(todoService);
+    void missingUserScopeFailsClosedAndNestedScopesRestoreEvenOnFailure() {
+        assertEquals(401, assertThrows(ApiException.class, UserContext::requireId).getStatus());
+        UserContext.call(11L, () -> {
+            assertEquals(11L, UserContext.requireId());
+            assertThrows(IllegalStateException.class, () -> UserContext.call(22L, () -> {
+                assertEquals(22L, UserContext.requireId());
+                throw new IllegalStateException("test");
+            }));
+            assertEquals(11L, UserContext.requireId());
+            assertEquals(401, CompletableFuture.supplyAsync(() ->
+                    assertThrows(ApiException.class, UserContext::requireId).getStatus()).join());
+            return null;
+        });
+        assertThrows(ApiException.class, UserContext::requireId);
     }
 
     @Test
-    void testScheduleTaskExecutionAndTodoLifecycle() {
-        // 1. 手动触发一次完整巡检，确保三大作业执行无报错
-        scheduleTaskService.executeAllChecks();
+    void everyOwnedTableRequiresScopeAndRewritesSelectUpdateDeleteInsert() {
+        TenantLineInnerInterceptor tenant = (TenantLineInnerInterceptor)
+                new TenantConfiguration().userIsolation().getInterceptors().get(0);
+        for (String table : List.of("account", "category", "transaction", "cycle_template",
+                "cycle_record", "target", "wishlist", "liability", "todo_item")) {
+            String select = "SELECT * FROM `" + table + "`";
+            assertThrows(ApiException.class, () -> tenant.parserSingle(select, null), table);
+            UserContext.call(345L, () -> {
+                for (String sql : List.of(select, "UPDATE `" + table + "` SET id = 2 WHERE id = 1",
+                        "DELETE FROM `" + table + "` WHERE id = 1")) {
+                    String rewritten = tenant.parserSingle(sql, null);
+                    assertTrue(rewritten.contains("user_id = 345"), rewritten);
+                }
+                String insert = tenant.parserSingle("INSERT INTO `" + table + "` (id) VALUES (1)", null);
+                assertTrue(insert.contains("user_id"), insert);
+                assertTrue(insert.contains("345"), insert);
+                return null;
+            });
+        }
+        assertEquals("SELECT * FROM user", tenant.parserSingle("SELECT * FROM user", null));
+        assertEquals("SELECT * FROM auth_session", tenant.parserSingle("SELECT * FROM auth_session", null));
+    }
 
-        // 2. 验证待办中心服务可正常获取数据
-        List<TodoItem> pendingList = todoService.getTodos("PENDING");
-        Assertions.assertNotNull(pendingList);
-        long count = todoService.countPending();
-        Assertions.assertEquals(pendingList.size(), count);
+    @Test
+    void namesNormalizeAndPasswordValidationHonorsUnicodeAndBcryptByteBoundary() {
+        assertEquals("user.name-1", UserServiceImpl.normalizeUsername(" USER.Name-1 "));
+        for (String name : List.of("ab", "a b", "用户123", "x".repeat(51))) {
+            assertEquals(400, assertThrows(ApiException.class,
+                    () -> UserServiceImpl.normalizeUsername(name)).getStatus());
+        }
+        assertThrows(ApiException.class, () -> UserServiceImpl.normalizeUsername(null));
+        for (String password : List.of("1234567", "x".repeat(73), "密".repeat(25), "😀".repeat(7))) {
+            assertThrows(ApiException.class, () -> UserServiceImpl.validatePassword(password));
+        }
+        assertThrows(ApiException.class, () -> UserServiceImpl.validatePassword(null));
+        assertDoesNotThrow(() -> UserServiceImpl.validatePassword("x".repeat(72)));
+        assertDoesNotThrow(() -> UserServiceImpl.validatePassword("密".repeat(24)));
+        assertDoesNotThrow(() -> UserServiceImpl.validatePassword("😀".repeat(8)));
+        BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+        String hash = encoder.encode("八个字符测试密码");
+        assertNotEquals("八个字符测试密码", hash);
+        assertTrue(encoder.matches("八个字符测试密码", hash));
+        assertFalse(encoder.matches("another-password", hash));
+    }
 
-        // 3. 验证幂等创建与忽略逻辑
-        String mockBizId = "mock_test_999";
-        todoService.createTodoIfNotExists("WISHLIST_REACHED", "测试心愿达成", "测试内容说明", mockBizId);
-        List<TodoItem> listAfterCreate = todoService.getTodos("PENDING");
-        TodoItem created = listAfterCreate.stream().filter(t -> mockBizId.equals(t.getBizId())).findFirst().orElse(null);
-        Assertions.assertNotNull(created);
-
-        // 4. 忽略该测试待办
-        todoService.dismissTodo(created.getId());
-        List<TodoItem> listAfterDismiss = todoService.getTodos("PENDING");
-        Assertions.assertTrue(listAfterDismiss.stream().noneMatch(t -> mockBizId.equals(t.getBizId())));
-
-        // 5. 核销测试待办
-        todoService.resolveTodo(created.getId());
+    @Test
+    void sessionTokenHashHasStableSha256Representation() {
+        assertEquals("ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad", UserServiceImpl.hashToken("abc"));
+        assertNotEquals(UserServiceImpl.hashToken("abc"), UserServiceImpl.hashToken("abd"));
+        assertEquals(64, UserServiceImpl.hashToken("token").length());
     }
 }

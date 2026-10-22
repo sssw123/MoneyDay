@@ -13,7 +13,7 @@ import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
 import java.util.List;
 
 @TableName(value = "cycle_record", autoResultMap = true)
-public class CycleRecord {
+public class CycleRecord extends UserOwned {
     @TableId(type = IdType.AUTO)
     private Long id;
     private LocalDate cycleStartDate;

@@ -9,7 +9,7 @@ import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
 import java.util.List;
 
 @TableName(value = "cycle_template", autoResultMap = true)
-public class CycleTemplate {
+public class CycleTemplate extends UserOwned {
     @TableId(type = IdType.AUTO)
     private Long id;
     private String name;

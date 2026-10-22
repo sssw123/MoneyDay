@@ -18,6 +18,8 @@ import java.util.UUID;
 
 @Service
 public class CycleTemplateServiceImpl implements CycleTemplateService {
+    @Autowired private com.moneyday.backend.security.OwnershipGuard guard;
+
 
     @Autowired
     private CycleTemplateMapper mapper;
@@ -31,6 +33,8 @@ public class CycleTemplateServiceImpl implements CycleTemplateService {
 
     @Transactional
     public CycleTemplate add(CycleTemplate template) {
+        template.setId(null);
+        guard.fixedItems(template.getFixedItems());
         if (template.getIsDefault() != null && template.getIsDefault() == 1) {
             mapper.clearDefault();
         } else {
@@ -104,6 +108,8 @@ public class CycleTemplateServiceImpl implements CycleTemplateService {
 
     @Transactional
     public CycleTemplate update(CycleTemplate template) {
+        guard.require(mapper,template.getId());
+        guard.fixedItems(template.getFixedItems());
         if (template.getIsDefault() != null && template.getIsDefault() == 1) {
             mapper.clearDefault();
         } else {
@@ -127,11 +133,13 @@ public class CycleTemplateServiceImpl implements CycleTemplateService {
 
     @Transactional
     public void delete(Long id) {
+        guard.require(mapper,id);
         mapper.deleteById(id);
     }
 
     @Transactional
     public void setDefault(Long id) {
+        guard.require(mapper,id);
         mapper.clearDefault();
         mapper.setDefault(id);
         CycleTemplate template = mapper.selectById(id);

@@ -117,9 +117,11 @@ const columns = [
 ];
 
 const fetchData = async () => {
-  accounts.value = await request.get('/accounts');
-  categories.value = await request.get('/categories');
-  transactions.value = await request.get('/transactions');
+  try {
+    accounts.value = await request.get('/accounts');
+    categories.value = await request.get('/categories');
+    transactions.value = await request.get('/transactions');
+  } catch { /* Shared request handling covers errors and discarded prior-user responses. */ }
 };
 
 const getAccountName = (id: number) => {

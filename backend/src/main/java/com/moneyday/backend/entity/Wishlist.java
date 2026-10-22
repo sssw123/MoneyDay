@@ -9,7 +9,7 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.IdType;
 
 @TableName("wishlist")
-public class Wishlist {
+public class Wishlist extends UserOwned {
     @TableId(type = IdType.AUTO)
     private Long id;
     private String name;

@@ -18,6 +18,8 @@ import java.util.List;
 
 @Service
 public class LiabilityServiceImpl implements LiabilityService {
+    @Autowired private com.moneyday.backend.security.OwnershipGuard guard;
+
 
     @Autowired
     private LiabilityMapper liabilityMapper;
@@ -88,6 +90,9 @@ public class LiabilityServiceImpl implements LiabilityService {
 
     @Override
     public Liability addLiability(Liability liability) {
+        liability.setId(null);
+        guard.account(liability.getDefaultAccountId());
+        guard.category(liability.getCategoryId());
         if (liability.getStartDate() == null) {
             liability.setStartDate(LocalDate.now());
         }
@@ -103,6 +108,14 @@ public class LiabilityServiceImpl implements LiabilityService {
         if (liability.getRepaymentDay() == null) {
             liability.setRepaymentDay(10);
         }
+
+        if (liability.getTotalPeriods() == null || liability.getTotalPeriods() < 1 || liability.getPeriodAmount() == null || liability.getPeriodAmount().signum() <= 0 || liability.getRepaymentDay() < 1 || liability.getRepaymentDay() > 31) {
+            throw new IllegalArgumentException("期数、每期金额或还款日无效");
+        }
+        if (liability.getTotalAmount() == null) liability.setTotalAmount(liability.getPeriodAmount().multiply(BigDecimal.valueOf(liability.getTotalPeriods())));
+        if (liability.getPrincipal() == null) liability.setPrincipal(liability.getTotalAmount());
+        if (liability.getRateType() == null) liability.setRateType("NONE");
+        if (liability.getInterestRate() == null) liability.setInterestRate(BigDecimal.ZERO);
 
         // 推算/校验初始下一次还款日
         if (liability.getNextRepaymentDate() == null) {
@@ -145,6 +158,9 @@ public class LiabilityServiceImpl implements LiabilityService {
 
     @Override
     public Liability updateLiability(Liability liability) {
+        guard.require(liabilityMapper,liability.getId());
+        guard.account(liability.getDefaultAccountId());
+        guard.category(liability.getCategoryId());
         if (liability.getTotalPeriods() != null && liability.getCurrentPeriod() != null) {
             if (liability.getCurrentPeriod() >= liability.getTotalPeriods()) {
                 liability.setStatus("SETTLED");
@@ -161,15 +177,17 @@ public class LiabilityServiceImpl implements LiabilityService {
 
     @Override
     public void deleteLiability(Long id) {
+        guard.require(liabilityMapper,id);
         liabilityMapper.deleteById(id);
     }
 
     @Override
     @Transactional
     public void repayPeriods(Long id, Integer periods, BigDecimal amount, Long accountId) {
-        Liability liability = liabilityMapper.selectById(id);
+        Liability liability = liabilityMapper.selectOne(new QueryWrapper<Liability>().eq("id",id).last("FOR UPDATE"));
+        if(liability == null) throw com.moneyday.backend.common.ApiException.notFound();
         if (liability == null || "SETTLED".equalsIgnoreCase(liability.getStatus())) {
-            throw new RuntimeException("负债不存在或已结清");
+            throw new com.moneyday.backend.common.ApiException(400, "负债不存在或已结清");
         }
 
         int curP = liability.getCurrentPeriod() != null ? liability.getCurrentPeriod() : 0;
@@ -180,7 +198,7 @@ public class LiabilityServiceImpl implements LiabilityService {
             throw new IllegalArgumentException("归还期数无效，最多可还剩余 " + remainingP + " 期");
         }
 
-        Account account = accountMapper.selectById(accountId);
+        Account account = guard.require(accountMapper,accountId);
         if (account == null) {
             throw new IllegalArgumentException("扣款账户不存在");
         }
@@ -233,12 +251,13 @@ public class LiabilityServiceImpl implements LiabilityService {
     @Override
     @Transactional
     public void settleLiability(Long id, Long accountId, BigDecimal settleAmount) {
-        Liability liability = liabilityMapper.selectById(id);
+        Liability liability = liabilityMapper.selectOne(new QueryWrapper<Liability>().eq("id",id).last("FOR UPDATE"));
+        if(liability == null) throw com.moneyday.backend.common.ApiException.notFound();
         if (liability == null || "SETTLED".equalsIgnoreCase(liability.getStatus())) {
-            throw new RuntimeException("负债不存在或已结清");
+            throw new com.moneyday.backend.common.ApiException(400, "负债不存在或已结清");
         }
 
-        Account account = accountMapper.selectById(accountId);
+        Account account = guard.require(accountMapper,accountId);
         if (account == null) {
             throw new IllegalArgumentException("扣款账户不存在");
         }

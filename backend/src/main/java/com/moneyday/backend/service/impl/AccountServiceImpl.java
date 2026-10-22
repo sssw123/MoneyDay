@@ -11,6 +11,8 @@ import java.util.List;
 
 @Service
 public class AccountServiceImpl implements AccountService {
+    @Autowired private com.moneyday.backend.security.OwnershipGuard guard;
+
 
     @Autowired
     private AccountMapper accountMapper;
@@ -20,10 +22,11 @@ public class AccountServiceImpl implements AccountService {
     }
 
     public Account getAccountById(Long id) {
-        return accountMapper.selectById(id);
+        return guard.require(accountMapper, id);
     }
 
     public Account addAccount(Account account) {
+        account.setId(null);
         if (account.getInitialBalance() != null) {
             account.setCurrentBalance(account.getInitialBalance());
         }
@@ -32,11 +35,13 @@ public class AccountServiceImpl implements AccountService {
     }
 
     public Account updateAccount(Account account) {
+        guard.require(accountMapper, account.getId());
         accountMapper.updateById(account);
         return account;
     }
 
     public void deleteAccount(Long id) {
+        guard.require(accountMapper, id);
         accountMapper.deleteById(id);
     }
 }

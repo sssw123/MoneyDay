@@ -1,6 +1,7 @@
 <template>
   <a-config-provider :theme="theme" :locale="zhCN">
-    <a-layout class="app-shell">
+    <router-view v-if="route.meta.standalone" :key="`${session.generation}:${route.path}`" />
+    <a-layout v-else-if="session.token && session.user && !session.user.mustChangePassword" class="app-shell">
       <aside
         v-if="!isMobile"
         class="sidebar"
@@ -52,8 +53,21 @@
               ><BellOutlined /><span class="todo-link-label">待办事项</span
               ><a-badge :count="pendingCount" size="small" /></router-link
             ><span class="topbar-separator"></span>
-            <div class="profile-mark" aria-hidden="true">M</div>
-            <span class="profile-label">私人账本</span>
+            <a-dropdown :trigger="['click']">
+              <a-button type="text" class="account-menu-button" aria-label="账户菜单">
+                <span class="profile-mark" aria-hidden="true">{{ session.user?.username?.slice(0, 1).toUpperCase() }}</span>
+                <span class="profile-label">{{ session.user?.username }}</span><DownOutlined />
+              </a-button>
+              <template #overlay>
+                <a-menu>
+                  <a-menu-item key="profile" disabled>{{ session.user?.username }} · {{ session.user?.role === 'ADMIN' ? '管理员' : '普通用户' }}</a-menu-item>
+                  <a-menu-item key="password" @click="router.push('/change-password')">修改密码</a-menu-item>
+                  <a-menu-item v-if="session.user?.role === 'ADMIN'" key="users" @click="router.push('/admin/users')">用户管理</a-menu-item>
+                  <a-menu-divider />
+                  <a-menu-item key="logout" @click="logout">退出登录</a-menu-item>
+                </a-menu>
+              </template>
+            </a-dropdown>
           </div>
         </header>
         <main id="main-content" class="page-content">
@@ -62,7 +76,7 @@
             <h1>{{ currentPage.title }}</h1>
             <p>{{ currentPage.description }}</p>
           </div>
-          <router-view />
+          <router-view :key="`${session.generation}:${route.path}`" />
         </main>
         <footer class="app-footer">
           <span>MoneyDay ©2026</span><span>认真生活，自在积累。</span>
@@ -74,7 +88,7 @@
 
 <script lang="ts" setup>
 import { ref, watch, onMounted, onUnmounted, computed } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import type { ThemeConfig } from 'ant-design-vue/es/config-provider/context';
 import zhCN from 'ant-design-vue/es/locale/zh_CN';
 import {
@@ -82,9 +96,11 @@ import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   BellOutlined,
+  DownOutlined,
 } from '@ant-design/icons-vue';
 import AppNavigation from './components/AppNavigation.vue';
-import request from './utils/request';
+import request, { logoutSession } from './utils/request';
+import { session } from './auth/session';
 
 const theme: ThemeConfig = {
   token: {
@@ -128,9 +144,17 @@ const pages: Record<string, { title: string; description: string }> = {
     description: '看清待还金额与还款节奏，从容安排未来支出。',
   },
   '/todos': { title: '待办中心', description: '周期提醒、分期还款与心愿进展，及时照顾每一件事。' },
+  '/admin/users': { title: '用户管理', description: '创建与管理普通用户，每位用户都拥有独立的账本。' },
   '/settings': { title: '系统设置', description: '设置专属账单周期，让账本贴合你的生活节奏。' },
 };
 const route = useRoute();
+const router = useRouter();
+async function logout() {
+  const pending = logoutSession();
+  pendingCount.value = 0;
+  await router.replace('/login');
+  await pending;
+}
 const currentPage = computed(() => pages[route.path] ?? { title: 'MoneyDay', description: '' });
 const collapsed = ref(false);
 const isMobile = ref(false);
@@ -144,6 +168,7 @@ const syncViewport = () => {
   if (!isMobile.value) drawerOpen.value = false;
 };
 const fetchPendingCount = async () => {
+  if (!session.token || session.user?.mustChangePassword || route.meta.standalone) { pendingCount.value = 0; return; }
   try {
     const res = await request.get<never, { count: number }>('/todos/pending-count');
     pendingCount.value = res.count || 0;
@@ -152,7 +177,7 @@ const fetchPendingCount = async () => {
   }
 };
 watch(
-  () => route.path,
+  () => [route.path, session.generation],
   () => {
     drawerOpen.value = false;
     fetchPendingCount();

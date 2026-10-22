@@ -7,7 +7,7 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.IdType;
 
 @TableName("category")
-public class Category {
+public class Category extends UserOwned {
     @TableId(type = IdType.AUTO)
     private Long id;
     private String name;

@@ -1,6 +1,9 @@
 spring:
   profiles:
     active: local
+  sql:
+    init:
+      mode: never
   jackson:
     time-zone: Asia/Shanghai
 
@@ -8,4 +11,4 @@ mybatis-plus:
   mapper-locations: classpath*:/mapper/**/*.xml
   configuration:
     map-underscore-to-camel-case: true
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl

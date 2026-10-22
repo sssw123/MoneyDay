@@ -298,10 +298,12 @@ const settleAmount = ref<number>(0);
 const settleAccountId = ref<number | null>(null);
 
 const fetchData = async () => {
-  liabilities.value = await request.get('/liabilities');
-  accounts.value = await request.get('/accounts');
-  const allCategories: any[] = await request.get('/categories');
-  expenseCategories.value = allCategories.filter(c => c.type === 2);
+  try {
+    liabilities.value = await request.get('/liabilities');
+    accounts.value = await request.get('/accounts');
+    const allCategories: any[] = await request.get('/categories');
+    expenseCategories.value = allCategories.filter(c => c.type === 2);
+  } catch { /* Shared request handling covers errors and discarded prior-user responses. */ }
 };
 
 const recalculateAmount = () => {

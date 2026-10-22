@@ -506,11 +506,13 @@ const pieOption = computed(() => ({
 }));
 
 const refreshData = async () => {
-  stats.value = await request.get('/stats');
-  cycles.value = await request.get('/cycles');
-  targets.value = await request.get('/targets');
-  wishlists.value = await request.get('/wishlists');
-  accounts.value = await request.get('/accounts');
+  try {
+    stats.value = await request.get('/stats');
+    cycles.value = await request.get('/cycles');
+    targets.value = await request.get('/targets');
+    wishlists.value = await request.get('/wishlists');
+    accounts.value = await request.get('/accounts');
+  } catch { /* Shared request handling covers errors and discarded prior-user responses. */ }
 };
 
 onMounted(() => {

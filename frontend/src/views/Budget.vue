@@ -90,8 +90,10 @@ const itemAccountId = ref<number | null>(null);
 const itemDate = ref<string>('');
 
 const fetchData = async () => {
-  cycles.value = await request.get('/cycles');
-  accounts.value = await request.get('/accounts');
+  try {
+    cycles.value = await request.get('/cycles');
+    accounts.value = await request.get('/accounts');
+  } catch { /* Shared request handling covers errors and discarded prior-user responses. */ }
 };
 
 const handleTagClick = (record: any, item: any) => {

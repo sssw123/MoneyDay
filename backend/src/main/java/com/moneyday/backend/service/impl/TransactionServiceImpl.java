@@ -15,6 +15,8 @@ import java.util.List;
 
 @Service
 public class TransactionServiceImpl implements TransactionService {
+    @Autowired private com.moneyday.backend.security.OwnershipGuard guard;
+
 
     @Autowired
     private TransactionMapper transactionMapper;
@@ -26,11 +28,13 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     public Transaction getTransactionById(Long id) {
-        return transactionMapper.selectById(id);
+        return guard.require(transactionMapper,id);
     }
 
     @Transactional
     public Transaction addTransaction(Transaction tx) {
+        guard.transaction(tx);
+        tx.setId(null);
         // 1. insert
         transactionMapper.insert(tx);
         // 2. update account balance
@@ -40,7 +44,8 @@ public class TransactionServiceImpl implements TransactionService {
 
     @Transactional
     public Transaction updateTransaction(Transaction tx) {
-        Transaction oldTx = transactionMapper.selectById(tx.getId());
+        Transaction oldTx = guard.require(transactionMapper,tx.getId());
+        guard.transaction(tx);
         if (oldTx == null) throw new IllegalArgumentException("Transaction not found");
 
         // 1. revert old
@@ -59,7 +64,7 @@ public class TransactionServiceImpl implements TransactionService {
 
     @Transactional
     public void deleteTransaction(Long id) {
-        Transaction oldTx = transactionMapper.selectById(id);
+        Transaction oldTx = guard.require(transactionMapper,id);
         if (oldTx != null) {
             applyTransactionToAccount(oldTx, true);
             transactionMapper.deleteById(id);
@@ -104,7 +109,7 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     private void updateBalance(Long accountId, BigDecimal delta) {
-        Account acc = accountMapper.selectById(accountId);
+        Account acc = guard.require(accountMapper,accountId);
         if (acc == null) throw new IllegalArgumentException("Account not found: " + accountId);
         acc.setCurrentBalance(acc.getCurrentBalance().add(delta));
         accountMapper.updateById(acc);

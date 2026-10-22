@@ -1,0 +1,5 @@
+{"file": ".trellis/spec/frontend/index.md", "reason": "现有前端及云端业务约束"}
+{"file": ".trellis/spec/frontend/offline-mobile-architecture.md", "reason": "云端唯一账本和用户会话隔离"}
+{"file": ".trellis/tasks/10-22-flutter-multiplatform/design.md", "reason": "用户已审阅的六端实施边界"}
+{"file": ".trellis/tasks/10-22-flutter-multiplatform/research/shared-contract.md", "reason": "并行实现的共享类型与调用签名"}
+{"file": ".trellis/spec/frontend/flutter-architecture.md", "reason": "Flutter六端可执行会话与平台验证契约"}

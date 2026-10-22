@@ -1,9 +1,12 @@
+-- 仅由独立初始化工具对空数据库执行，禁止在旧单用户库中执行。
 -- ============================================================
 -- MoneyDay 核心数据库结构定义 (MySQL 8.0+)
 -- ============================================================
 
 -- 1. 周期模板表 (Cycle Template)
 CREATE TABLE IF NOT EXISTS `cycle_template` (
+    `user_id` BIGINT NOT NULL,
+    INDEX `idx_user_id` (`user_id`),
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
     `name` VARCHAR(50) NOT NULL COMMENT '周期名称',
     `start_day` INT NOT NULL COMMENT '起算日 (1-31)',
@@ -11,22 +14,26 @@ CREATE TABLE IF NOT EXISTS `cycle_template` (
     `fixed_items` JSON NULL COMMENT '周期固定收支固存项 (JSON)'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='周期模板表';
 
-INSERT IGNORE INTO `cycle_template` (`id`, `name`, `start_day`, `is_default`, `fixed_items`) 
-VALUES (1, '自然月', 1, 1, '[]');
 
--- 2. 用户表 (单用户)
+
+-- 2. 用户表（多用户）
 CREATE TABLE IF NOT EXISTS `user` (
   `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
   `username` VARCHAR(50) NOT NULL UNIQUE,
-  `password` VARCHAR(255) NOT NULL,
+  `password` VARCHAR(255) NOT NULL COMMENT 'BCrypt 哈希',
+  `role` VARCHAR(16) NOT NULL DEFAULT 'USER',
+  `status` VARCHAR(16) NOT NULL DEFAULT 'ACTIVE',
+  `must_change_password` TINYINT(1) NOT NULL DEFAULT 1,
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户表';
 
-INSERT IGNORE INTO `user` (`id`, `username`, `password`) VALUES (1, 'admin', '123456');
+
 
 -- 3. 账户表
 CREATE TABLE IF NOT EXISTS `account` (
+    `user_id` BIGINT NOT NULL,
+    INDEX `idx_user_id` (`user_id`),
   `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
   `name` VARCHAR(50) NOT NULL COMMENT '账户名称，如招商银行、微信',
   `type` VARCHAR(20) NOT NULL COMMENT '账户类型，如 CASH, BANK, EWALLET',
@@ -38,6 +45,8 @@ CREATE TABLE IF NOT EXISTS `account` (
 
 -- 4. 分类表
 CREATE TABLE IF NOT EXISTS `category` (
+    `user_id` BIGINT NOT NULL,
+    INDEX `idx_user_id` (`user_id`),
   `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
   `name` VARCHAR(50) NOT NULL COMMENT '分类名称',
   `type` TINYINT NOT NULL COMMENT '1=收入, 2=支出',
@@ -46,12 +55,12 @@ CREATE TABLE IF NOT EXISTS `category` (
   `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='收支分类表';
 
-INSERT IGNORE INTO `category` (`id`, `name`, `type`, `is_active`) VALUES 
-(1, '工资', 1, 1), (2, '理财收益', 1, 1),
-(3, '餐饮', 2, 1), (4, '交通', 2, 1), (5, '购物', 2, 1), (6, '房租', 2, 1), (7, '分期还款', 2, 1);
+
 
 -- 5. 账单流水表
 CREATE TABLE IF NOT EXISTS `transaction` (
+    `user_id` BIGINT NOT NULL,
+    INDEX `idx_user_id` (`user_id`),
   `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
   `type` TINYINT NOT NULL COMMENT '1=收入, 2=支出, 3=转账',
   `amount` DECIMAL(18,2) NOT NULL COMMENT '金额，必须为正数',
@@ -67,6 +76,8 @@ CREATE TABLE IF NOT EXISTS `transaction` (
 
 -- 6. 周期快照表 (Cycle Record)
 CREATE TABLE IF NOT EXISTS `cycle_record` (
+    `user_id` BIGINT NOT NULL,
+    INDEX `idx_user_id` (`user_id`),
   `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
   `cycle_start_date` DATE NOT NULL COMMENT '周期开始日期',
   `cycle_end_date` DATE NOT NULL COMMENT '周期结束日期',
@@ -74,9 +85,12 @@ CREATE TABLE IF NOT EXISTS `cycle_record` (
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='周期快照表';
+CREATE UNIQUE INDEX uk_user_cycle ON cycle_record (user_id, cycle_start_date, cycle_end_date);
 
 -- 7. 目标表 (净资产目标)
 CREATE TABLE IF NOT EXISTS `target` (
+    `user_id` BIGINT NOT NULL,
+    INDEX `idx_user_id` (`user_id`),
   `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
   `name` VARCHAR(50) NOT NULL COMMENT '目标名称',
   `target_amount` DECIMAL(18,2) NOT NULL COMMENT '目标金额',
@@ -89,6 +103,8 @@ CREATE TABLE IF NOT EXISTS `target` (
 
 -- 8. 心愿单表 (独立储蓄心愿)
 CREATE TABLE IF NOT EXISTS `wishlist` (
+    `user_id` BIGINT NOT NULL,
+    INDEX `idx_user_id` (`user_id`),
   `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
   `name` VARCHAR(100) NOT NULL COMMENT '心愿名称',
   `target_amount` DECIMAL(18,2) NOT NULL COMMENT '心愿金额',
@@ -101,6 +117,8 @@ CREATE TABLE IF NOT EXISTS `wishlist` (
 
 -- 9. 透支分期表 (Liability)
 CREATE TABLE IF NOT EXISTS `liability` (
+    `user_id` BIGINT NOT NULL,
+    INDEX `idx_user_id` (`user_id`),
   `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
   `name` VARCHAR(100) NOT NULL COMMENT '分期/负债名称',
   `principal` DECIMAL(18,2) NOT NULL COMMENT '分期本金',
@@ -124,6 +142,8 @@ CREATE TABLE IF NOT EXISTS `liability` (
 
 -- 10. 待办事项表 (Todo Item)
 CREATE TABLE IF NOT EXISTS `todo_item` (
+    `user_id` BIGINT NOT NULL,
+    INDEX `idx_user_id` (`user_id`),
   `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
   `type` VARCHAR(30) NOT NULL COMMENT '待办类型: LIABILITY_OVERDUE(分期扣款失败), CYCLE_FIXED_ITEMS(新周期账单提醒), WISHLIST_REACHED(心愿达成)',
   `title` VARCHAR(100) NOT NULL COMMENT '待办标题',
@@ -135,3 +155,14 @@ CREATE TABLE IF NOT EXISTS `todo_item` (
   INDEX `idx_status_type` (`status`, `type`),
   INDEX `idx_biz` (`biz_id`, `type`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='待办事项与告警中心表';
+
+CREATE TABLE auth_session (
+  id CHAR(64) PRIMARY KEY COMMENT 'SHA256 Token 哈希',
+  user_id BIGINT NOT NULL,
+  expires_at DATETIME NOT NULL,
+  INDEX idx_session_user (user_id),
+  INDEX idx_session_expires (expires_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE moneyday_schema (id INT PRIMARY KEY, version INT NOT NULL);
+INSERT INTO moneyday_schema (id,version) VALUES (1,1);

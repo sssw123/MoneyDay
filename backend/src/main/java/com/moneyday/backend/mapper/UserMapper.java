@@ -9,4 +9,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 
 @Mapper
 public interface UserMapper extends BaseMapper<User> {
+    @Select("SELECT * FROM user WHERE id = #{id} FOR UPDATE")
+    User lockById(@Param("id") Long id);
+
 }

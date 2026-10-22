@@ -9,11 +9,16 @@
           <van-icon name="user-o" size="28" color="#1989fa" />
         </div>
         <div class="user-info">
-          <div class="username">MoneyDay 本地账本</div>
-          <div class="sub-text">单机私有部署 · 数据安全可靠</div>
+          <div class="username">{{ session.user?.username || 'MoneyDay' }}</div>
+          <div class="sub-text">云端个人账本 · {{ session.user?.role === 'ADMIN' ? '管理员' : '普通用户' }}</div>
         </div>
       </div>
 
+      <van-cell-group inset style="margin-bottom: 16px">
+        <van-cell title="修改密码" is-link to="/change-password" />
+        <van-cell v-if="session.user?.role === 'ADMIN'" title="用户管理" is-link to="/admin/users" />
+        <van-cell title="退出登录" is-link @click="logout" />
+      </van-cell-group>
       <!-- 账户管理折叠面板 -->
       <div class="setting-group">
         <div class="group-header">
@@ -99,7 +104,15 @@
 
 <script lang="ts" setup>
 import { ref, onMounted } from 'vue';
-import { showToast } from 'vant';
+import { showToast, showConfirmDialog } from 'vant';
+import { useRouter } from 'vue-router';
+import { session } from '../state/session';
+import { authService } from '../services/authService';
+const router = useRouter();
+async function logout() {
+  try { await showConfirmDialog({ title: '退出登录', message: '确认退出当前账户？' }); } catch { return; }
+  try { await authService.logout(); } finally { await router.replace('/login'); }
+}
 import { accountService, categoryService, cycleService } from '../services';
 
 const accounts = ref<any[]>([]);
