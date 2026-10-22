@@ -1,0 +1,109 @@
+name: Flutter 六端构建
+
+on:
+  push:
+    paths: ['flutter-frontend/**', '.github/workflows/flutter.yml']
+  pull_request:
+    paths: ['flutter-frontend/**', '.github/workflows/flutter.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: flutter-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FLUTTER_VERSION: '3.47.7'
+  # 仅用于验证编译；此保留域名不提供后端，不能视为业务验收通过。
+  BUILD_API_URL: 'https://moneyday.example.invalid/api'
+
+jobs:
+  build:
+    name: ${{ matrix.host }} / ${{ matrix.targets }}
+    runs-on: ${{ matrix.host }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - host: ubuntu-latest
+            targets: Web、Android、Linux
+          - host: windows-latest
+            targets: Windows
+          - host: macos-latest
+            targets: iOS、macOS
+    defaults:
+      run:
+        working-directory: flutter-frontend
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        if: runner.os == 'Linux'
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - name: Linux 编译依赖
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev
+      - name: 工具链信息
+        run: flutter doctor -v
+      - name: 锁定依赖
+        run: flutter pub get --enforce-lockfile
+      - name: 生成 DTO
+        run: dart run build_runner build --delete-conflicting-outputs
+      - name: 生成文件一致性
+        run: git diff --exit-code -- lib/data/models
+      - name: 格式检查
+        run: dart format --output=none --set-exit-if-changed lib test integration_test
+      - name: 静态分析
+        run: flutter analyze
+      - name: 单元与 Widget 测试
+        run: flutter test --reporter expanded
+      - name: 构建 Web
+        if: runner.os == 'Linux'
+        run: flutter build web --release --dart-define=API_BASE_URL="$BUILD_API_URL"
+      - name: 构建 Android 共存预览包
+        if: runner.os == 'Linux'
+        run: flutter build apk --debug --flavor preview --dart-define=API_BASE_URL="$BUILD_API_URL"
+      - name: 构建 Linux
+        if: runner.os == 'Linux'
+        run: flutter build linux --release --dart-define=API_BASE_URL="$BUILD_API_URL"
+      - name: 打包 Linux 并保留文件权限
+        if: runner.os == 'Linux'
+        run: tar -czf build/moneyday-linux.tar.gz -C build/linux/x64/release bundle
+      - name: 构建 Windows
+        if: runner.os == 'Windows'
+        run: flutter build windows --release --dart-define=API_BASE_URL="$BUILD_API_URL"
+      - name: 构建无签名 iOS
+        if: runner.os == 'macOS'
+        run: flutter build ios --release --no-codesign --dart-define=API_BASE_URL="$BUILD_API_URL"
+      - name: 构建 macOS
+        if: runner.os == 'macOS'
+        run: flutter build macos --release --dart-define=API_BASE_URL="$BUILD_API_URL"
+      - name: 打包 Apple 产物并保留符号链接
+        if: runner.os == 'macOS'
+        run: |
+          tar -czf build/moneyday-ios-unsigned.tar.gz -C build/ios/iphoneos .
+          tar -czf build/moneyday-macos.tar.gz -C build/macos/Build/Products/Release .
+      - name: 归档产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: moneyday-${{ runner.os }}-${{ github.sha }}
+          if-no-files-found: error
+          retention-days: 14
+          path: |
+            flutter-frontend/build/web/
+            flutter-frontend/build/app/outputs/flutter-apk/*preview*debug*.apk
+            flutter-frontend/build/moneyday-*.tar.gz
+            flutter-frontend/build/windows/x64/runner/Release/
+
+  # 真后端验收使用专用账户和隔离账本按 docs/validation.md 显式运行。
+  # 不在没有后端和账户时跳过测试后伪报集成验收通过。
