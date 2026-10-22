@@ -1,0 +1,51 @@
+MoneyDay Flutter 本地验证产物，2026-10-22
+基线提交：5246103c0c4be257afdeed8670baf787d4d10468；本次修改尚未提交。
+宿主：Windows 11 x64，Flutter 3.47.7 / Dart 3.13.5。
+这里只保存真实命令输出摘录。真实后端与其余目标宿主仍待验收。
+
+[flutter-test-final.log]
+00:07 +132: C:/Users/YIYIHP/Desktop/codespace/MoneyDay/flutter-frontend/test/app_navigation_test.dart: 1440 宽度使用指定导航且无布局溢出
+00:07 +133: C:/Users/YIYIHP/Desktop/codespace/MoneyDay/flutter-frontend/test/app_navigation_test.dart: 较短平板窗口 NavigationRail 可滚动到设置且不溢出
+00:07 +134: All tests passed!
+
+[flutter-web-build-final.log]
+Compiling lib\main.dart for the Web...
+Wasm dry run succeeded. Consider building and testing your application with the `--wasm` flag. See docs for more info: https://docs.flutter.dev/platform-integration/web/wasm
+Use --no-wasm-dry-run to disable these warnings.
+Font asset "CupertinoIcons.ttf" was tree-shaken, reducing it from 257628 to 1472 bytes (99.4% reduction). Tree-shaking can be disabled by providing the --no-tree-shake-icons flag when building your app.
+Font asset "MaterialIcons-Regular.otf" was tree-shaken, reducing it from 1645184 to 12448 bytes (99.2% reduction). Tree-shaking can be disabled by providing the --no-tree-shake-icons flag when building your app.
+Compiling lib\main.dart for the Web...                             34.2s
+√ Built build\web
+
+[flutter-windows-build-final.log]
+Building Windows application...                                    30.6s
+√ Built build\windows\x64\runner\Release\moneyday.exe
+
+[backend-regression.log]
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running com.moneyday.backend.BackendApplicationTests
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.392 s -- in com.moneyday.backend.BackendApplicationTests
+[INFO]
+[INFO] Results:
+[INFO]
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0
+[INFO]
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  01:06 min
+[INFO] Finished at: 2026-10-22T14:12:45+08:00
+[INFO] ------------------------------------------------------------------------
+
+[关键产物 SHA-256]
+e40d795934ad48ec1be2e922032f9c7308b2b2dd9be3f7406828926021f40a67  flutter-frontend/build/web/main.dart.js
+238cdb733863cffbe7b481d9653e2f721ecf268a466a3331c120b9729d2cb411  flutter-frontend/build/windows/x64/runner/Release/moneyday.exe
+e3a0bb63c91edf8202ad5b03baf4f4514cab1eeaad8db52ff490b1adc23bf609  flutter-frontend/pubspec.lock
+56a2b5f7be5341deb6e8c3964c6907918d956da9eb162ded114f083bd92fda87  flutter-frontend/lib/data/models/models.freezed.dart
+565e21e82561c2ad166c7b668e4e253271ad4ba63be92508e2248e619f7cbcaa  flutter-frontend/lib/data/models/models.g.dart
+
+产物不是签名发布包；Windows 使用保留 API 域名，只证明编译。
+Web 登录界面实际启动并验证空提交，未使用真实账号。
+本机无 Android SDK，无 macOS/Linux 目标宿主。CI 尚未运行。

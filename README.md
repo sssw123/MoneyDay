@@ -3,7 +3,7 @@
 <p align="center">
   <strong>专为个人日常设计的理财记账与攒钱资产管理系统</strong>
   <br>
-  <span>Web 全功能在线版 + Android 纯离线脱机版，告别数据焦虑，掌控个人现金流</span>
+  <span>统一云端账本，保留 Web 与 Android，新增 Flutter 六端客户端</span>
 </p>
 
 <p align="center">
@@ -11,7 +11,7 @@
   <img src="https://img.shields.io/badge/Java-17-blue.svg" alt="Java 17">
   <img src="https://img.shields.io/badge/Vue.js-3.x-4fc08d.svg" alt="Vue 3">
   <img src="https://img.shields.io/badge/TypeScript-5.x-blue.svg" alt="TypeScript">
-  <img src="https://img.shields.io/badge/SQLite-Offline-orange.svg" alt="SQLite">
+  <img src="https://img.shields.io/badge/Flutter-3.47.7-02569B.svg" alt="Flutter">
   <img src="https://img.shields.io/badge/MySQL-8.0+-blue.svg" alt="MySQL">
   <img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License">
 </p>
@@ -20,9 +20,9 @@
 
 ## 💡 项目简介
 
-**MoneyDay** 是一款兼顾日常收支流水、自定义账单周期、强制储蓄规划与负债管理的个人资产工具。不同于市面上依赖云端托管和繁琐广告的记账软件，MoneyDay 坚持**隐私第一、资产托底、逻辑闭环**：
+**MoneyDay** 是一款兼顾日常收支流水、自定义账单周期、强制储蓄规划与负债管理的个人资产工具。通过可自行部署的 Spring Boot 服务管理统一账本，坚持**隐私第一、资产托底、逻辑闭环**：
 
-- **双端支持**：既有功能完备、大屏可视化的 **Web 端**，也有开箱即用、完全不依赖服务器的 **Android 纯离线移动端**。
+- **多平台支持**：现有 Vue **Web** 与 Capacitor **Android** 使用统一云端 API；新增 **Flutter** 工程覆盖 Web、Android、iOS、Windows、macOS、Linux，逐端验收通过前保留旧版默认入口。
 - **打破自然月限制**：支持任意自定义账单周期（如发薪日 10 号为起算日），结余与预算更贴合真实生活节奏。
 - **严谨记账哲学**：区分“心愿单”与“长期资产目标”，引入“可用净资产”和“负债分期代扣”，避免盲目储蓄导致的资金透支。
 
@@ -30,14 +30,16 @@
 
 ## ✨ 核心特性
 
-### 1. 双端运行形态
+### 1. 云端账本与多平台客户端
 - **Web 全功能版** (`frontend` + `backend`)：
   - 基于 Spring Boot 3 + MyBatis-Plus + Vue 3 + Ant Design Vue 构建；
   - 拥有完整的收支看板、月度与历史趋势图表、全局多账户联动。
-- **Android 纯离线脱机版** (`android-frontend`)：
-  - 基于 Vue 3 + Vant 4 + Capacitor + 本地 SQLite 构建；
-  - **飞行模式 / 无网络状态秒级响应**，无需启动后端服务器或数据库；
-  - 所有数据存储在手机本地私有沙箱中，私密安全，关机不丢失。
+- **Android 云端版** (`android-frontend`)：
+  - 基于 Vue 3 + Vant 4 + Capacitor 8，通过 HTTP 访问同一 Spring Boot 账本；
+  - 需要网络和后端，不支持离线记账或同步；旧 SQLite 文件保留但不初始化、读取、迁移或删除。
+- **Flutter 六端客户端** (`flutter-frontend`)：
+  - Material 3、响应式导航与桌面表格/移动卡片，统一登录、记账、预算、计划、待办和用户管理；
+  - 作为独立工程与旧版并行，构建和业务验收逐端记录，完成切换门槛后再替换默认入口。
 
 ### 2. 灵活账单周期与快照机制
 - 支持自定义起始日（如每月 10 号至次月 9 号为一个账单周期）；
@@ -67,7 +69,9 @@
 | **Web 前端 (Frontend)** | Vue 3, Vite, TypeScript | 桌面端与浏览器适配响应式界面 |
 | | Ant Design Vue, ECharts, Pinia | UI 组件库与统计图表呈现 |
 | **移动端 (Android)** | Vue 3, Vant 4, TypeScript | 移动端触屏体验与交互适配 |
-| | Capacitor 8, Capacitor Community SQLite | 跨平台移动运行时与原生 SQLite 离线存储 |
+| | Capacitor 8, HTTP 服务适配器 | 访问统一云端 API，历史 SQLite 仅保留兼容文件 |
+| **Flutter 客户端** | Flutter 3.47.7, Dart 3.13.5, Material 3 | Web、Android、iOS、Windows、macOS、Linux |
+| | Provider, go_router, Dio, Freezed, fl_chart | MVVM、类型模型、统一会话与图表 |
 
 ---
 
@@ -81,9 +85,13 @@ MoneyDay/
 ├── frontend/                 # Web 前端工程 (Vue 3 + Ant Design Vue)
 │   ├── src/                  # 页面、组件与 Pinia Store
 │   └── vite.config.ts        # Vite 开发服务器与代理配置
-├── android-frontend/         # Android 离线移动端工程 (Vue 3 + Vant 4 + Capacitor)
-│   ├── src/                  # 触屏端业务源码与 SQLite DAO 封装
+├── android-frontend/         # 现有 Android 云端工程 (Vue 3 + Vant 4 + Capacitor)
+│   ├── src/                  # 触屏端业务源码与 HTTP 服务适配器
 │   └── android/              # Capacitor 生成的原生 Android Studio 工程
+├── flutter-frontend/         # 独立 Flutter 六端工程，迁移期间与旧版并行
+│   ├── lib/                  # Material 3、MVVM、Dio API 与类型模型
+│   ├── test/                 # 单元、契约与 Widget 测试
+│   └── docs/                 # 六端验证记录、功能对照及切换/回退清单
 ├── CONTEXT.md                # 核心业务领域模型与术语约定
 ├── CONTRIBUTING.md           # 代码贡献与提交规范
 └── LICENSE                   # MIT 开源许可证
@@ -132,25 +140,35 @@ npm run dev
 
 ---
 
-### 4. 运行 Android 纯离线脱机版
+### 4. 运行现有 Android 云端版
 
-Android 端支持在手机上脱机独立运行（无需启动后端及 MySQL）：
+Android 需要可访问的后端、MySQL、管理员分配的账号，以及 Node 22、JDK 21 和 Android SDK 36。先配置完整 API 地址再构建（以下为 POSIX shell 示例）：
 
-1. **安装依赖与构建资源**：
-   ```bash
-   cd android-frontend
-   npm install
-   npm run build
-   npx cap sync android
-   ```
-2. **构建与运行 APK**：
-   - **方式一（推荐）**：使用 **Android Studio** 打开 `android-frontend/android` 目录，点击 `Build` -> `Build Bundle(s) / APK(s)` -> `Build APK(s)`，生成的安装包位于 `android/app/build/outputs/apk/debug/app-debug.apk`。
-   - **方式二（命令行）**：
-     ```bash
-     cd android-frontend/android
-     ./gradlew assembleDebug
-     ```
-3. 将生成的 APK 安装到手机，首次打开会自动初始化本地 SQLite 数据库，离线立即可用。详细步骤可参阅 [Android 打包指引文档](android-frontend/android/README.md)。
+```sh
+cd android-frontend
+npm ci
+VITE_API_BASE_URL=http://10.0.2.2:8080/api npm run build -- --mode android-debug
+MONEYDAY_ANDROID_DEBUG=true npx cap sync android
+cd android
+./gradlew assembleDebug
+```
+
+模拟器使用 `10.0.2.2` 访问宿主后端；真机使用可达局域网地址。正式构建必须 HTTPS。安装后登录云端账本，首次及重置密码后必须改密；不会初始化或迁移历史 SQLite，也不支持离线记账。环境要求与网络行为以 [Android README](android-frontend/README.md) 为准。
+
+### 5. 开发 Flutter 六端工程
+
+安装固定 Flutter stable 3.47.7 / Dart 3.13.5 后：
+
+```sh
+cd flutter-frontend
+flutter pub get --enforce-lockfile
+dart run build_runner build --delete-conflicting-outputs
+flutter run -d web-server --web-hostname=127.0.0.1 --web-port=5175
+```
+
+另开终端在同目录运行 `python tool/dev_proxy.py`，浏览器打开 `http://127.0.0.1:5173`。该地址代理 `/api` 到已启动的后端；若旧 Vue 开发服务占用 5173，先停止它或给代理设置其他端口。原生平台使用 `--dart-define=API_BASE_URL=完整后端地址`。
+
+完整启动、六端构建及 Android 共存包说明见 [Flutter README](flutter-frontend/README.md)。[验证记录](flutter-frontend/docs/validation.md) 区分实际构建与真实后端验收；[迁移清单](flutter-frontend/docs/migration-checklist.md) 全部通过前不切换旧版默认入口。CI 示例 API 地址仅验证编译，不代表可用后端。
 
 ---
 

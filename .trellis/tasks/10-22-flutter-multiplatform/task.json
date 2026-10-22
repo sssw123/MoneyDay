@@ -1,0 +1,31 @@
+{
+  "id": "flutter-multiplatform",
+  "name": "flutter-multiplatform",
+  "title": "Flutter 六端重构",
+  "description": "并行建设 Material 3 Flutter 客户端，完整迁移云端业务，完成六端构建验收后切换",
+  "status": "in_progress",
+  "dev_type": null,
+  "scope": null,
+  "package": null,
+  "priority": "P2",
+  "creator": "codex",
+  "assignee": "codex",
+  "createdAt": "2026-10-22",
+  "completedAt": null,
+  "branch": "main",
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [
+    "10-22-flutter-foundation",
+    "10-22-flutter-finance",
+    "10-22-flutter-planning-admin",
+    "10-22-flutter-platform-validation"
+  ],
+  "parent": null,
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {}
+}
