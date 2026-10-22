@@ -42,4 +42,20 @@ application-local.properties
 !application-local.yml.example
 
 
-/.trellis/
+# Keep local Trellis runtime private; retain this migration's reviewable records.
+/.trellis/*
+!/.trellis/tasks/
+/.trellis/tasks/*
+!/.trellis/tasks/10-22-flutter-multiplatform/
+!/.trellis/tasks/10-22-flutter-foundation/
+!/.trellis/tasks/10-22-flutter-finance/
+!/.trellis/tasks/10-22-flutter-planning-admin/
+!/.trellis/tasks/10-22-flutter-platform-validation/
+!/.trellis/spec/
+/.trellis/spec/*
+!/.trellis/spec/frontend/
+/.trellis/spec/frontend/*
+!/.trellis/spec/frontend/flutter-architecture.md
+
+# Local Flutter SDK and download cache
+/.tools/

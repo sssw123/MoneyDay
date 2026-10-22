@@ -1,0 +1,6 @@
+# Copy to key.properties and use the SAME signing key as the existing Android app.
+# This file is an example. Never commit real passwords or the keystore.
+storeFile=../signing/moneyday.jks
+storePassword=REPLACE_LOCALLY
+keyAlias=moneyday
+keyPassword=REPLACE_LOCALLY
